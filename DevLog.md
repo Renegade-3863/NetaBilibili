@@ -28,7 +28,7 @@
     end
 
     subgraph 基础设施
-        K[BCrypt 加密] --> G
+        K[Argon2 加密] --> G
         L[JWT 签发/验证] --> C
         subgraph 监控扩展层
             M[Prometheus] --> |抓取指标| F

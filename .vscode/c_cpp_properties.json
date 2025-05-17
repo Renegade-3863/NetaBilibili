@@ -4,7 +4,7 @@
             "name": "Mac",
             "includePath": [
                 "${workspaceFolder}/**",
-                "${env:VCPKG_ROOT}/installed/arm64-osx/include"
+                "/Users/jiechengheren/vcpkg/installed/arm64-osx/include/**"
             ],
             "defines": [],
             "macFrameworkPath": [
