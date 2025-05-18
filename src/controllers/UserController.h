@@ -11,21 +11,19 @@
 #include <json/json.h>
 
 using namespace drogon;
-using namespace drogon::orm;
+// using namespace drogon::orm;
 
+// 目前对应的路由处理函数还未实现，所以这里先注释掉
 // class UserController : public HttpController<UserController> {
 // public:
 //     METHOD_LIST_BEGIN
-//         ADD_METHOD_TO(UserController::registerUser, )
+//     // 注册路由
+//         ADD_METHOD_TO(UserController::registerUser, "/api/user/register", Post);
+//         ADD_METHOD_TO(UserController::login, "/api/user/login", Post);
 //     METHOD_LIST_END
-
 //     // 用户注册
-//     void registerUser(const HttpRequestPtr& req,
-//                       std::function<void(const HttpResponsePtr&)>&& callback) {
-//         Json::Value json;
-//         if(!parseJsonRequest(req, json, callback)) return;
-//     }
+//     void registerUser(const HttpRequestPtr& req, std::function<void(const HttpResponsePtr& )>&& callback);
 
-// private:
-//     std::shared_ptr<UserService> userService_;
+//     // 用户登陆（签发 JWT）
+//     void login(const HttpRequestPtr& req, std::function<void(const HttpResponsePtr&)>&& callback);
 // };
