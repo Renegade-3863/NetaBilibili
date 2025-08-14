@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # 本机目录路径
-HOST_DIR="/Users/jiechengheren/NetaBilibili/ReactorHttp/ReactorHttp/testDir"
+HOST_DIR="/home/hzouaf/ReactorServer/SimpleHttp"
 
 # 容器内挂载目录
 CONTAINER_DIR="/app/test"
@@ -18,7 +18,8 @@ docker run --rm -it -p ${PORT}:${PORT} -v \
     /app/build/ReactorServer \
     ${PORT} ${CONTAINER_DIR} 
 
-# 下面是只运行容器的命令，因为本机测试平台为 Arm64 的 Mac M1，所以需要强制指定平台为 amd64
+# 下面是只运行容器的命令
+# 目前 Arm64 架构的 Mac M1 芯片运行会有一些极其卡顿的问题，别问我怎么知道的（）
 # docker run --rm -it -p ${PORT}:${PORT} -v \
     # "${HOST_DIR}:${CONTAINER_DIR}" \
     # reactorhttp-build \
