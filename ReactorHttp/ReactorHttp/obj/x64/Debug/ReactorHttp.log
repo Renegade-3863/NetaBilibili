@@ -1,0 +1,239 @@
+﻿  正在清理远程项目目录
+  正在验证源
+  正在将源远程复制到“172.26.116.14”
+  正在验证体系结构
+  正在验证体系结构
+  正在启动远程生成
+  正在编译源:
+  Buffer.c
+C:\Users\zouhao\Desktop\ReactorHttp\Buffer.c(17,51): warning : conversion to ‘long unsigned int’ from ‘int’ may change the sign of the result [-Wsign-conversion]
+C:\Users\zouhao\Desktop\ReactorHttp\Buffer.c(17,51): warning :    17 |         buffer->data = (char*)malloc(sizeof(char) * size);
+C:\Users\zouhao\Desktop\ReactorHttp\Buffer.c(17,51): warning :       |                                                   ^
+C:\Users\zouhao\Desktop\ReactorHttp\Buffer.c(21,33): warning : conversion to ‘size_t’ {aka ‘long unsigned int’} from ‘int’ may change the sign of the result [-Wsign-conversion]
+C:\Users\zouhao\Desktop\ReactorHttp\Buffer.c(21,33): warning :    21 |         memset(buffer->data, 0, size);
+C:\Users\zouhao\Desktop\ReactorHttp\Buffer.c(21,33): warning :       |                                 ^~~~
+C:\Users\zouhao\Desktop\ReactorHttp\Buffer.c(54,60): warning : conversion to ‘size_t’ {aka ‘long unsigned int’} from ‘int’ may change the sign of the result [-Wsign-conversion]
+C:\Users\zouhao\Desktop\ReactorHttp\Buffer.c(54,60): warning :    54 |         memcpy(buffer->data, buffer->data+buffer->readPos, readable);
+C:\Users\zouhao\Desktop\ReactorHttp\Buffer.c(54,60): warning :       |                                                            ^~~~~~~~
+C:\Users\zouhao\Desktop\ReactorHttp\Buffer.c(63,61): warning : conversion to ‘size_t’ {aka ‘long unsigned int’} from ‘int’ may change the sign of the result [-Wsign-conversion]
+C:\Users\zouhao\Desktop\ReactorHttp\Buffer.c(63,61): warning :    63 |         void* temp = realloc(buffer->data, buffer->capacity + size);
+C:\Users\zouhao\Desktop\ReactorHttp\Buffer.c(63,61): warning :       |                                            ~~~~~~~~~~~~~~~~~^~~~~~
+C:\Users\zouhao\Desktop\ReactorHttp\Buffer.c(68,44): warning : conversion to ‘size_t’ {aka ‘long unsigned int’} from ‘int’ may change the sign of the result [-Wsign-conversion]
+C:\Users\zouhao\Desktop\ReactorHttp\Buffer.c(68,44): warning :    68 |         memset(temp + buffer->capacity, 0, size);
+C:\Users\zouhao\Desktop\ReactorHttp\Buffer.c(68,44): warning :       |                                            ^~~~
+C:\Users\zouhao\Desktop\ReactorHttp\Buffer.c(95,51): warning : conversion to ‘size_t’ {aka ‘long unsigned int’} from ‘int’ may change the sign of the result [-Wsign-conversion]
+C:\Users\zouhao\Desktop\ReactorHttp\Buffer.c(95,51): warning :    95 |     memcpy(buffer->data + buffer->writePos, data, size);
+C:\Users\zouhao\Desktop\ReactorHttp\Buffer.c(95,51): warning :       |                                                   ^~~~
+C:\Users\zouhao\Desktop\ReactorHttp\Buffer.c(102,16): warning : conversion from ‘size_t’ {aka ‘long unsigned int’} to ‘int’ may change value [-Wconversion]
+C:\Users\zouhao\Desktop\ReactorHttp\Buffer.c(102,16): warning :   102 |     int size = strlen(data);
+C:\Users\zouhao\Desktop\ReactorHttp\Buffer.c(102,16): warning :       |                ^~~~~~
+C:\Users\zouhao\Desktop\ReactorHttp\Buffer.c(114,22): warning : conversion to ‘size_t’ {aka ‘long unsigned int’} from ‘int’ may change the sign of the result [-Wsign-conversion]
+C:\Users\zouhao\Desktop\ReactorHttp\Buffer.c(114,22): warning :   114 |     vec[0].iov_len = writeable;
+C:\Users\zouhao\Desktop\ReactorHttp\Buffer.c(114,22): warning :       |                      ^~~~~~~~~
+C:\Users\zouhao\Desktop\ReactorHttp\Buffer.c(120,18): warning : conversion from ‘ssize_t’ {aka ‘long int’} to ‘int’ may change value [-Wconversion]
+C:\Users\zouhao\Desktop\ReactorHttp\Buffer.c(120,18): warning :   120 |     int result = readv(fd, vec, 2);
+C:\Users\zouhao\Desktop\ReactorHttp\Buffer.c(120,18): warning :       |                  ^~~~~
+C:\Users\zouhao\Desktop\ReactorHttp\Buffer.c(147,56): warning : conversion to ‘size_t’ {aka ‘long unsigned int’} from ‘int’ may change the sign of the result [-Wsign-conversion]
+C:\Users\zouhao\Desktop\ReactorHttp\Buffer.c(147,56): warning :   147 |     char* ptr = memmem(buffer->data + buffer->readPos, bufferReadableSize(buffer), "\r\n", 2);
+C:\Users\zouhao\Desktop\ReactorHttp\Buffer.c(147,56): warning :       |                                                        ^~~~~~~~~~~~~~~~~~~~~~~~~~
+C:\Users\zouhao\Desktop\ReactorHttp\Buffer.c(159,66): warning : conversion to ‘size_t’ {aka ‘long unsigned int’} from ‘int’ may change the sign of the result [-Wsign-conversion]
+C:\Users\zouhao\Desktop\ReactorHttp\Buffer.c(159,66): warning :   159 |         int count = send(socket, buffer->data + buffer->readPos, readable, MSG_NOSIGNAL);
+C:\Users\zouhao\Desktop\ReactorHttp\Buffer.c(159,66): warning :       |                                                                  ^~~~~~~~
+C:\Users\zouhao\Desktop\ReactorHttp\Buffer.c(159,21): warning : conversion from ‘ssize_t’ {aka ‘long int’} to ‘int’ may change value [-Wconversion]
+C:\Users\zouhao\Desktop\ReactorHttp\Buffer.c(159,21): warning :   159 |         int count = send(socket, buffer->data + buffer->readPos, readable, MSG_NOSIGNAL);
+C:\Users\zouhao\Desktop\ReactorHttp\Buffer.c(159,21): warning :       |                     ^~~~
+  Channel.c
+  ChannelMap.c
+C:\Users\zouhao\Desktop\ReactorHttp\ChannelMap.c(10,66): warning : conversion to ‘long unsigned int’ from ‘int’ may change the sign of the result [-Wsign-conversion]
+C:\Users\zouhao\Desktop\ReactorHttp\ChannelMap.c(10,66): warning :    10 |     map->list = (struct Channel**)malloc(sizeof(struct Channel*) * size);
+C:\Users\zouhao\Desktop\ReactorHttp\ChannelMap.c(10,66): warning :       |                                                                  ^
+C:\Users\zouhao\Desktop\ReactorHttp\ChannelMap.c(42,60): warning : conversion to ‘size_t’ {aka ‘long unsigned int’} from ‘int’ may change the sign of the result [-Wsign-conversion]
+C:\Users\zouhao\Desktop\ReactorHttp\ChannelMap.c(42,60): warning :    42 |         struct Channel** temp = realloc(map->list, curSize * unitSize);
+C:\Users\zouhao\Desktop\ReactorHttp\ChannelMap.c(42,60): warning :       |                                                    ~~~~~~~~^~~~~~~~~~
+C:\Users\zouhao\Desktop\ReactorHttp\ChannelMap.c(51,64): warning : conversion to ‘size_t’ {aka ‘long unsigned int’} from ‘int’ may change the sign of the result [-Wsign-conversion]
+C:\Users\zouhao\Desktop\ReactorHttp\ChannelMap.c(51,64): warning :    51 |         memset(&map->list[map->size], 0, (curSize - map->size) * unitSize);
+C:\Users\zouhao\Desktop\ReactorHttp\ChannelMap.c(51,64): warning :       |                                          ~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~
+  EpollDispatcher.c
+C:\Users\zouhao\Desktop\ReactorHttp\EpollDispatcher.c(40,16): warning : conversion to ‘unsigned int’ from ‘int’ may change the sign of the result [-Wsign-conversion]
+C:\Users\zouhao\Desktop\ReactorHttp\EpollDispatcher.c(40,16): warning :    40 |         events |= EPOLLIN;
+C:\Users\zouhao\Desktop\ReactorHttp\EpollDispatcher.c(40,16): warning :       |                ^~
+C:\Users\zouhao\Desktop\ReactorHttp\EpollDispatcher.c(40,19): warning : conversion to ‘int’ from ‘unsigned int’ may change the sign of the result [-Wsign-conversion]
+C:\Users\zouhao\Desktop\ReactorHttp\EpollDispatcher.c(40,19): warning :    40 |         events |= EPOLLIN;
+C:\Users\zouhao\Desktop\ReactorHttp\EpollDispatcher.c(40,19): warning :       |                   ^~~~~~~
+C:\Users\zouhao\Desktop\ReactorHttp\EpollDispatcher.c(44,16): warning : conversion to ‘unsigned int’ from ‘int’ may change the sign of the result [-Wsign-conversion]
+C:\Users\zouhao\Desktop\ReactorHttp\EpollDispatcher.c(44,16): warning :    44 |         events |= EPOLLOUT;
+C:\Users\zouhao\Desktop\ReactorHttp\EpollDispatcher.c(44,16): warning :       |                ^~
+C:\Users\zouhao\Desktop\ReactorHttp\EpollDispatcher.c(44,19): warning : conversion to ‘int’ from ‘unsigned int’ may change the sign of the result [-Wsign-conversion]
+C:\Users\zouhao\Desktop\ReactorHttp\EpollDispatcher.c(44,19): warning :    44 |         events |= EPOLLOUT;
+C:\Users\zouhao\Desktop\ReactorHttp\EpollDispatcher.c(44,19): warning :       |                   ^~~~~~~~
+C:\Users\zouhao\Desktop\ReactorHttp\EpollDispatcher.c(46,17): warning : conversion to ‘uint32_t’ {aka ‘unsigned int’} from ‘int’ may change the sign of the result [-Wsign-conversion]
+C:\Users\zouhao\Desktop\ReactorHttp\EpollDispatcher.c(46,17): warning :    46 |     ev.events = events;
+C:\Users\zouhao\Desktop\ReactorHttp\EpollDispatcher.c(46,17): warning :       |                 ^~~~~~
+C:\Users\zouhao\Desktop\ReactorHttp\EpollDispatcher.c(109,22): warning : conversion to ‘int’ from ‘uint32_t’ {aka ‘unsigned int’} may change the sign of the result [-Wsign-conversion]
+C:\Users\zouhao\Desktop\ReactorHttp\EpollDispatcher.c(109,22): warning :   109 |         int events = data->events[i].events;
+C:\Users\zouhao\Desktop\ReactorHttp\EpollDispatcher.c(109,22): warning :       |                      ^~~~
+C:\Users\zouhao\Desktop\ReactorHttp\EpollDispatcher.c(113,20): warning : conversion to ‘unsigned int’ from ‘int’ may change the sign of the result [-Wsign-conversion]
+C:\Users\zouhao\Desktop\ReactorHttp\EpollDispatcher.c(113,20): warning :   113 |         if (events & EPOLLERR || events & EPOLLHUP)
+C:\Users\zouhao\Desktop\ReactorHttp\EpollDispatcher.c(113,20): warning :       |                    ^
+C:\Users\zouhao\Desktop\ReactorHttp\EpollDispatcher.c(113,41): warning : conversion to ‘unsigned int’ from ‘int’ may change the sign of the result [-Wsign-conversion]
+C:\Users\zouhao\Desktop\ReactorHttp\EpollDispatcher.c(113,41): warning :   113 |         if (events & EPOLLERR || events & EPOLLHUP)
+C:\Users\zouhao\Desktop\ReactorHttp\EpollDispatcher.c(113,41): warning :       |                                         ^
+C:\Users\zouhao\Desktop\ReactorHttp\EpollDispatcher.c(121,20): warning : conversion to ‘unsigned int’ from ‘int’ may change the sign of the result [-Wsign-conversion]
+C:\Users\zouhao\Desktop\ReactorHttp\EpollDispatcher.c(121,20): warning :   121 |         if (events & EPOLLIN)
+C:\Users\zouhao\Desktop\ReactorHttp\EpollDispatcher.c(121,20): warning :       |                    ^
+C:\Users\zouhao\Desktop\ReactorHttp\EpollDispatcher.c(125,20): warning : conversion to ‘unsigned int’ from ‘int’ may change the sign of the result [-Wsign-conversion]
+C:\Users\zouhao\Desktop\ReactorHttp\EpollDispatcher.c(125,20): warning :   125 |         if (events & EPOLLOUT)
+C:\Users\zouhao\Desktop\ReactorHttp\EpollDispatcher.c(125,20): warning :       |                    ^
+  EventLoop.c
+C:\Users\zouhao\Desktop\ReactorHttp\HttpRequest.h(61,30): warning : ‘struct TcpConnection’ declared inside parameter list will not be visible outside of this definition or declaration
+C:\Users\zouhao\Desktop\ReactorHttp\HttpRequest.h(61,30): warning :    61 | bool parseHttpRequest(struct TcpConnection* conn, struct HttpRequest* request, struct Buffer* readBuf, struct HttpResponse* response, struct Buffer* sendBuf, int socket);
+C:\Users\zouhao\Desktop\ReactorHttp\HttpRequest.h(61,30): warning :       |                              ^~~~~~~~~~~~~
+C:\Users\zouhao\Desktop\ReactorHttp\HttpRequest.h(63,32): warning : ‘struct TcpConnection’ declared inside parameter list will not be visible outside of this definition or declaration
+C:\Users\zouhao\Desktop\ReactorHttp\HttpRequest.h(63,32): warning :    63 | bool processHttpRequest(struct TcpConnection* conn, struct HttpRequest* request, struct HttpResponse* response);
+C:\Users\zouhao\Desktop\ReactorHttp\HttpRequest.h(63,32): warning :       |                                ^~~~~~~~~~~~~
+  HttpRequest.c
+C:\Users\zouhao\Desktop\ReactorHttp\WebSocket.h(27,36): warning : ‘struct TcpConnection’ declared inside parameter list will not be visible outside of this definition or declaration
+C:\Users\zouhao\Desktop\ReactorHttp\WebSocket.h(27,36): warning :    27 | void sendWebSocketTextFrame(struct TcpConnection* conn, const char* msg);
+C:\Users\zouhao\Desktop\ReactorHttp\WebSocket.h(27,36): warning :       |                                    ^~~~~~~~~~~~~
+C:\Users\zouhao\Desktop\ReactorHttp\HttpRequest.c(99,34): warning : conversion to ‘size_t’ {aka ‘long unsigned int’} from ‘long int’ may change the sign of the result [-Wsign-conversion]
+C:\Users\zouhao\Desktop\ReactorHttp\HttpRequest.c(99,34): warning :    99 |         space = memmem(start, end-start, sub, strlen(sub));
+C:\Users\zouhao\Desktop\ReactorHttp\HttpRequest.c(99,34): warning :       |                               ~~~^~~~~~
+C:\Users\zouhao\Desktop\ReactorHttp\HttpRequest.c(102,18): warning : conversion from ‘long int’ to ‘int’ may change value [-Wconversion]
+C:\Users\zouhao\Desktop\ReactorHttp\HttpRequest.c(102,18): warning :   102 |     int length = space - start;
+C:\Users\zouhao\Desktop\ReactorHttp\HttpRequest.c(102,18): warning :       |                  ^~~~~
+C:\Users\zouhao\Desktop\ReactorHttp\HttpRequest.c(103,38): warning : conversion to ‘size_t’ {aka ‘long unsigned int’} from ‘int’ may change the sign of the result [-Wsign-conversion]
+C:\Users\zouhao\Desktop\ReactorHttp\HttpRequest.c(103,38): warning :   103 |     char* tmp = (char*)malloc(length + 1);
+C:\Users\zouhao\Desktop\ReactorHttp\HttpRequest.c(103,38): warning :       |                               ~~~~~~~^~~
+C:\Users\zouhao\Desktop\ReactorHttp\HttpRequest.c(104,25): warning : conversion to ‘size_t’ {aka ‘long unsigned int’} from ‘int’ may change the sign of the result [-Wsign-conversion]
+C:\Users\zouhao\Desktop\ReactorHttp\HttpRequest.c(104,25): warning :   104 |     strncpy(tmp, start, length);
+C:\Users\zouhao\Desktop\ReactorHttp\HttpRequest.c(104,25): warning :       |                         ^~~~~~
+C:\Users\zouhao\Desktop\ReactorHttp\HttpRequest.c(117,20): warning : conversion from ‘long int’ to ‘int’ may change value [-Wconversion]
+C:\Users\zouhao\Desktop\ReactorHttp\HttpRequest.c(117,20): warning :   117 |     int lineSize = end - start;
+C:\Users\zouhao\Desktop\ReactorHttp\HttpRequest.c(117,20): warning :       |                    ^~~
+C:\Users\zouhao\Desktop\ReactorHttp\HttpRequest.c(173,24): warning : conversion from ‘long int’ to ‘int’ may change value [-Wconversion]
+C:\Users\zouhao\Desktop\ReactorHttp\HttpRequest.c(173,24): warning :   173 |         int lineSize = end - start;
+C:\Users\zouhao\Desktop\ReactorHttp\HttpRequest.c(173,24): warning :       |                        ^~~
+C:\Users\zouhao\Desktop\ReactorHttp\HttpRequest.c(175,38): warning : conversion to ‘size_t’ {aka ‘long unsigned int’} from ‘int’ may change the sign of the result [-Wsign-conversion]
+C:\Users\zouhao\Desktop\ReactorHttp\HttpRequest.c(178,47): warning : conversion to ‘size_t’ {aka ‘long unsigned int’} from ‘long int’ may change the sign of the result [-Wsign-conversion]
+C:\Users\zouhao\Desktop\ReactorHttp\HttpRequest.c(178,47): warning :   178 |             char* key = malloc(middle - start + 1);
+C:\Users\zouhao\Desktop\ReactorHttp\HttpRequest.c(178,47): warning :       |                                ~~~~~~~~~~~~~~~^~~
+C:\Users\zouhao\Desktop\ReactorHttp\HttpRequest.c(179,40): warning : conversion to ‘size_t’ {aka ‘long unsigned int’} from ‘long int’ may change the sign of the result [-Wsign-conversion]
+C:\Users\zouhao\Desktop\ReactorHttp\HttpRequest.c(179,40): warning :   179 |             strncpy(key, start, middle - start);
+C:\Users\zouhao\Desktop\ReactorHttp\HttpRequest.c(179,40): warning :       |                                 ~~~~~~~^~~~~~~
+C:\Users\zouhao\Desktop\ReactorHttp\HttpRequest.c(182,47): warning : conversion to ‘size_t’ {aka ‘long unsigned int’} from ‘long int’ may change the sign of the result [-Wsign-conversion]
+C:\Users\zouhao\Desktop\ReactorHttp\HttpRequest.c(182,47): warning :   182 |             char* value = malloc(end - middle - 1);
+C:\Users\zouhao\Desktop\ReactorHttp\HttpRequest.c(182,47): warning :       |                                  ~~~~~~~~~~~~~^~~
+C:\Users\zouhao\Desktop\ReactorHttp\HttpRequest.c(183,51): warning : conversion to ‘size_t’ {aka ‘long unsigned int’} from ‘long int’ may change the sign of the result [-Wsign-conversion]
+C:\Users\zouhao\Desktop\ReactorHttp\HttpRequest.c(183,51): warning :   183 |             strncpy(value, middle+2, end - middle - 2);
+C:\Users\zouhao\Desktop\ReactorHttp\HttpRequest.c(183,51): warning :       |                                      ~~~~~~~~~~~~~^~~
+C:\Users\zouhao\Desktop\ReactorHttp\HttpRequest.c(277,19): warning : conversion from ‘int’ to ‘char’ may change value [-Wconversion]
+C:\Users\zouhao\Desktop\ReactorHttp\HttpRequest.c(277,19): warning :   277 |             *to = hexToDec(from[1]) * 16 + hexToDec(from[2]);
+C:\Users\zouhao\Desktop\ReactorHttp\HttpRequest.c(277,19): warning :       |                   ^~~~~~~~
+C:\Users\zouhao\Desktop\ReactorHttp\HttpRequest.c(414,19): warning : conversion from ‘ssize_t’ {aka ‘long int’} to ‘int’ may change value [-Wconversion]
+C:\Users\zouhao\Desktop\ReactorHttp\HttpRequest.c(414,19): warning :   414 |         int len = read(fd, buf, sizeof(buf));
+C:\Users\zouhao\Desktop\ReactorHttp\HttpRequest.c(414,19): warning :       |                   ^~~~
+C:\Users\zouhao\Desktop\ReactorHttp\HttpRequest.c(514,16): warning : conversion from ‘size_t’ {aka ‘long unsigned int’} to ‘int’ may change value [-Wconversion]
+C:\Users\zouhao\Desktop\ReactorHttp\HttpRequest.c(514,16): warning :   514 |     return bptr->length;
+C:\Users\zouhao\Desktop\ReactorHttp\HttpRequest.c(514,16): warning :       |            ~~~~^~~~~~~~
+C:\Users\zouhao\Desktop\ReactorHttp\HttpRequest.c(539,9): warning : unused variable ‘base64Len’ [-Wunused-variable]
+C:\Users\zouhao\Desktop\ReactorHttp\HttpRequest.c(539,9): warning :   539 |     int base64Len = base64Encode(hash, SHA_DIGEST_LENGTH, base64Hash);
+C:\Users\zouhao\Desktop\ReactorHttp\HttpRequest.c(539,9): warning :       |         ^~~~~~~~~
+  HttpResponse.c
+C:\Users\zouhao\Desktop\ReactorHttp\HttpResponse.c(15,56): warning : conversion to ‘size_t’ {aka ‘long unsigned int’} from ‘int’ may change the sign of the result [-Wsign-conversion]
+C:\Users\zouhao\Desktop\ReactorHttp\HttpResponse.c(15,56): warning :    15 |     response->headers = (struct ResponseHeader*)malloc(size);
+C:\Users\zouhao\Desktop\ReactorHttp\HttpResponse.c(15,56): warning :       |                                                        ^~~~
+C:\Users\zouhao\Desktop\ReactorHttp\HttpResponse.c(18,30): warning : conversion to ‘size_t’ {aka ‘long unsigned int’} from ‘int’ may change the sign of the result [-Wsign-conversion]
+C:\Users\zouhao\Desktop\ReactorHttp\HttpResponse.c(18,30): warning :    18 |     bzero(response->headers, size);
+C:\Users\zouhao\Desktop\ReactorHttp\HttpResponse.c(18,30): warning :       |                              ^~~~
+  main.c
+C:\Users\zouhao\Desktop\ReactorHttp\main.c(15,27): warning : conversion from ‘int’ to ‘short unsigned int’ may change value [-Wconversion]
+C:\Users\zouhao\Desktop\ReactorHttp\main.c(15,27): warning :    15 |     unsigned short port = atoi(argv[1]);
+C:\Users\zouhao\Desktop\ReactorHttp\main.c(15,27): warning :       |                           ^~~~
+  PollDispatcher.c
+C:\Users\zouhao\Desktop\ReactorHttp\PollDispatcher.c(63,35): warning : conversion from ‘int’ to ‘short int’ may change value [-Wconversion]
+C:\Users\zouhao\Desktop\ReactorHttp\PollDispatcher.c(63,35): warning :    63 |             data->fds[i].events = events;
+C:\Users\zouhao\Desktop\ReactorHttp\PollDispatcher.c(63,35): warning :       |                                   ^~~~~~
+C:\Users\zouhao\Desktop\ReactorHttp\PollDispatcher.c(115,35): warning : conversion from ‘int’ to ‘short int’ may change value [-Wconversion]
+C:\Users\zouhao\Desktop\ReactorHttp\PollDispatcher.c(115,35): warning :   115 |             data->fds[i].events = events;
+C:\Users\zouhao\Desktop\ReactorHttp\PollDispatcher.c(115,35): warning :       |                                   ^~~~~~
+C:\Users\zouhao\Desktop\ReactorHttp\PollDispatcher.c(130,45): warning : conversion to ‘nfds_t’ {aka ‘long unsigned int’} from ‘int’ may change the sign of the result [-Wsign-conversion]
+C:\Users\zouhao\Desktop\ReactorHttp\PollDispatcher.c(130,45): warning :   130 |     int count = poll(data->fds, data->maxfd + 1, timeout * 1000);
+C:\Users\zouhao\Desktop\ReactorHttp\PollDispatcher.c(130,45): warning :       |                                 ~~~~~~~~~~~~^~~
+  SelectDispatcher.c
+  TcpConnection.c
+C:\Users\zouhao\Desktop\ReactorHttp\HttpRequest.h(61,30): warning : ‘struct TcpConnection’ declared inside parameter list will not be visible outside of this definition or declaration
+C:\Users\zouhao\Desktop\ReactorHttp\HttpRequest.h(61,30): warning :    61 | bool parseHttpRequest(struct TcpConnection* conn, struct HttpRequest* request, struct Buffer* readBuf, struct HttpResponse* response, struct Buffer* sendBuf, int socket);
+C:\Users\zouhao\Desktop\ReactorHttp\HttpRequest.h(61,30): warning :       |                              ^~~~~~~~~~~~~
+C:\Users\zouhao\Desktop\ReactorHttp\HttpRequest.h(63,32): warning : ‘struct TcpConnection’ declared inside parameter list will not be visible outside of this definition or declaration
+C:\Users\zouhao\Desktop\ReactorHttp\HttpRequest.h(63,32): warning :    63 | bool processHttpRequest(struct TcpConnection* conn, struct HttpRequest* request, struct HttpResponse* response);
+C:\Users\zouhao\Desktop\ReactorHttp\HttpRequest.h(63,32): warning :       |                                ^~~~~~~~~~~~~
+C:\Users\zouhao\Desktop\ReactorHttp\WebSocket.h(27,36): warning : ‘struct TcpConnection’ declared inside parameter list will not be visible outside of this definition or declaration
+C:\Users\zouhao\Desktop\ReactorHttp\WebSocket.h(27,36): warning :    27 | void sendWebSocketTextFrame(struct TcpConnection* conn, const char* msg);
+C:\Users\zouhao\Desktop\ReactorHttp\WebSocket.h(27,36): warning :       |                                    ^~~~~~~~~~~~~
+C:\Users\zouhao\Desktop\ReactorHttp\TcpConnection.c(24,16): warning : suggest parentheses around assignment used as truth value [-Wparentheses]
+C:\Users\zouhao\Desktop\ReactorHttp\TcpConnection.c(24,16): warning :    24 |         while (flag = parseWebSocketFrame(conn->readBuf, &opcode, payload, &payloadLen))
+C:\Users\zouhao\Desktop\ReactorHttp\TcpConnection.c(24,16): warning :       |                ^~~~
+C:\Users\zouhao\Desktop\ReactorHttp\TcpConnection.c(41,40): warning : passing argument 1 of ‘sendWebSocketTextFrame’ from incompatible pointer type [-Wincompatible-pointer-types]
+C:\Users\zouhao\Desktop\ReactorHttp\TcpConnection.c(41,40): warning :    41 |                 sendWebSocketTextFrame(conn, payload);
+C:\Users\zouhao\Desktop\ReactorHttp\TcpConnection.c(41,40): warning :       |                                        ^~~~
+C:\Users\zouhao\Desktop\ReactorHttp\TcpConnection.c(41,40): warning :       |                                        |
+C:\Users\zouhao\Desktop\ReactorHttp\TcpConnection.c(41,40): warning :       |                                        struct TcpConnection *
+C:\Users\zouhao\Desktop\ReactorHttp\WebSocket.h(27,51): message : expected ‘struct TcpConnection *’ but argument is of type ‘struct TcpConnection *’
+C:\Users\zouhao\Desktop\ReactorHttp\WebSocket.h(27,51): message :    27 | void sendWebSocketTextFrame(struct TcpConnection* conn, const char* msg);
+C:\Users\zouhao\Desktop\ReactorHttp\WebSocket.h(27,51): message :       |                             ~~~~~~~~~~~~~~~~~~~~~~^~~~
+C:\Users\zouhao\Desktop\ReactorHttp\TcpConnection.c(79,42): warning : passing argument 1 of ‘parseHttpRequest’ from incompatible pointer type [-Wincompatible-pointer-types]
+C:\Users\zouhao\Desktop\ReactorHttp\TcpConnection.c(79,42): warning :    79 |             bool flag = parseHttpRequest(conn, conn->request, conn->readBuf, conn->response, conn->writeBuf, socket);
+C:\Users\zouhao\Desktop\ReactorHttp\TcpConnection.c(79,42): warning :       |                                          ^~~~
+C:\Users\zouhao\Desktop\ReactorHttp\TcpConnection.c(79,42): warning :       |                                          |
+C:\Users\zouhao\Desktop\ReactorHttp\TcpConnection.c(79,42): warning :       |                                          struct TcpConnection *
+C:\Users\zouhao\Desktop\ReactorHttp\HttpRequest.h(61,45): message : expected ‘struct TcpConnection *’ but argument is of type ‘struct TcpConnection *’
+C:\Users\zouhao\Desktop\ReactorHttp\HttpRequest.h(61,45): message :    61 | bool parseHttpRequest(struct TcpConnection* conn, struct HttpRequest* request, struct Buffer* readBuf, struct HttpResponse* response, struct Buffer* sendBuf, int socket);
+C:\Users\zouhao\Desktop\ReactorHttp\HttpRequest.h(61,45): message :       |                       ~~~~~~~~~~~~~~~~~~~~~~^~~~
+  TcpServer.c
+C:\Users\zouhao\Desktop\ReactorHttp\HttpRequest.h(61,30): warning : ‘struct TcpConnection’ declared inside parameter list will not be visible outside of this definition or declaration
+C:\Users\zouhao\Desktop\ReactorHttp\HttpRequest.h(61,30): warning :    61 | bool parseHttpRequest(struct TcpConnection* conn, struct HttpRequest* request, struct Buffer* readBuf, struct HttpResponse* response, struct Buffer* sendBuf, int socket);
+C:\Users\zouhao\Desktop\ReactorHttp\HttpRequest.h(61,30): warning :       |                              ^~~~~~~~~~~~~
+C:\Users\zouhao\Desktop\ReactorHttp\HttpRequest.h(63,32): warning : ‘struct TcpConnection’ declared inside parameter list will not be visible outside of this definition or declaration
+C:\Users\zouhao\Desktop\ReactorHttp\HttpRequest.h(63,32): warning :    63 | bool processHttpRequest(struct TcpConnection* conn, struct HttpRequest* request, struct HttpResponse* response);
+C:\Users\zouhao\Desktop\ReactorHttp\HttpRequest.h(63,32): warning :       |                                ^~~~~~~~~~~~~
+C:\Users\zouhao\Desktop\ReactorHttp\WebSocket.h(27,36): warning : ‘struct TcpConnection’ declared inside parameter list will not be visible outside of this definition or declaration
+C:\Users\zouhao\Desktop\ReactorHttp\WebSocket.h(27,36): warning :    27 | void sendWebSocketTextFrame(struct TcpConnection* conn, const char* msg);
+C:\Users\zouhao\Desktop\ReactorHttp\WebSocket.h(27,36): warning :       |                                    ^~~~~~~~~~~~~
+  ThreadPool.c
+C:\Users\zouhao\Desktop\ReactorHttp\ThreadPool.c(13,84): warning : conversion to ‘long unsigned int’ from ‘int’ may change the sign of the result [-Wsign-conversion]
+C:\Users\zouhao\Desktop\ReactorHttp\ThreadPool.c(13,84): warning :    13 |     pool->workerThreads = (struct WorkerThread*)malloc(sizeof(struct WorkerThread) * count);
+C:\Users\zouhao\Desktop\ReactorHttp\ThreadPool.c(13,84): warning :       |                                                                                    ^
+C:\Users\zouhao\Desktop\ReactorHttp\ThreadPool.c(55,21): warning : operation on ‘pool->index’ may be undefined [-Wsequence-point]
+C:\Users\zouhao\Desktop\ReactorHttp\ThreadPool.c(55,21): warning :    55 |         pool->index = ++pool->index % pool->threadNum;
+C:\Users\zouhao\Desktop\ReactorHttp\ThreadPool.c(55,21): warning :       |         ~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  WebSocket.c
+C:\Users\zouhao\Desktop\ReactorHttp\HttpRequest.h(61,30): warning : ‘struct TcpConnection’ declared inside parameter list will not be visible outside of this definition or declaration
+C:\Users\zouhao\Desktop\ReactorHttp\HttpRequest.h(61,30): warning :    61 | bool parseHttpRequest(struct TcpConnection* conn, struct HttpRequest* request, struct Buffer* readBuf, struct HttpResponse* response, struct Buffer* sendBuf, int socket);
+C:\Users\zouhao\Desktop\ReactorHttp\HttpRequest.h(61,30): warning :       |                              ^~~~~~~~~~~~~
+C:\Users\zouhao\Desktop\ReactorHttp\HttpRequest.h(63,32): warning : ‘struct TcpConnection’ declared inside parameter list will not be visible outside of this definition or declaration
+C:\Users\zouhao\Desktop\ReactorHttp\HttpRequest.h(63,32): warning :    63 | bool processHttpRequest(struct TcpConnection* conn, struct HttpRequest* request, struct HttpResponse* response);
+C:\Users\zouhao\Desktop\ReactorHttp\HttpRequest.h(63,32): warning :       |                                ^~~~~~~~~~~~~
+C:\Users\zouhao\Desktop\ReactorHttp\WebSocket.c(70,41): warning : conversion to ‘size_t’ {aka ‘long unsigned int’} from ‘int’ may change the sign of the result [-Wsign-conversion]
+C:\Users\zouhao\Desktop\ReactorHttp\WebSocket.c(70,41): warning :    70 |             len = (len << 8) | data[pos + i];
+C:\Users\zouhao\Desktop\ReactorHttp\WebSocket.c(70,41): warning :       |                                         ^
+C:\Users\zouhao\Desktop\ReactorHttp\WebSocket.c(93,120): warning : conversion to ‘size_t’ {aka ‘long unsigned int’} from ‘int’ may change the sign of the result [-Wsign-conversion]
+C:\Users\zouhao\Desktop\ReactorHttp\WebSocket.c(93,120): warning :    93 |         printf("Not enough data to read payload, expected %zu bytes but only %d bytes available.\n", len, readableSize - pos);
+C:\Users\zouhao\Desktop\ReactorHttp\WebSocket.c(93,120): warning :       |                                                                                                                        ^
+C:\Users\zouhao\Desktop\ReactorHttp\WebSocket.c(105,30): warning : conversion to ‘char’ from ‘int’ may change the sign of the result [-Wsign-conversion]
+C:\Users\zouhao\Desktop\ReactorHttp\WebSocket.c(105,30): warning :   105 |                 payload[i] = data[pos + i] ^ maskingKey[i % 4];
+C:\Users\zouhao\Desktop\ReactorHttp\WebSocket.c(105,30): warning :       |                              ^~~~
+C:\Users\zouhao\Desktop\ReactorHttp\WebSocket.c(122,22): warning : conversion to ‘long unsigned int’ from ‘int’ may change the sign of the result [-Wsign-conversion]
+C:\Users\zouhao\Desktop\ReactorHttp\WebSocket.c(122,22): warning :   122 |     readBuf->readPos += pos + len;
+C:\Users\zouhao\Desktop\ReactorHttp\WebSocket.c(122,22): warning :       |                      ^~
+C:\Users\zouhao\Desktop\ReactorHttp\WebSocket.c(122,25): warning : conversion from ‘long unsigned int’ to ‘int’ may change value [-Wconversion]
+C:\Users\zouhao\Desktop\ReactorHttp\WebSocket.c(122,25): warning :   122 |     readBuf->readPos += pos + len;
+C:\Users\zouhao\Desktop\ReactorHttp\WebSocket.c(122,25): warning :       |                         ^~~
+C:\Users\zouhao\Desktop\ReactorHttp\WebSocket.c(38,13): warning : unused variable ‘fin’ [-Wunused-variable]
+C:\Users\zouhao\Desktop\ReactorHttp\WebSocket.c(38,13): warning :    38 |     uint8_t fin = (data[0] & 0x80) >> 7;
+C:\Users\zouhao\Desktop\ReactorHttp\WebSocket.c(38,13): warning :       |             ^~~
+C:\Users\zouhao\Desktop\ReactorHttp\WebSocket.c(175,52): warning : conversion from ‘size_t’ {aka ‘long unsigned int’} to ‘int’ may change value [-Wconversion]
+C:\Users\zouhao\Desktop\ReactorHttp\WebSocket.c(175,52): warning :   175 |     bufferAppendData(conn->writeBuf, (char*)frame, pos);
+C:\Users\zouhao\Desktop\ReactorHttp\WebSocket.c(175,52): warning :       |                                                    ^~~
+  WorkerThread.c
+  正在链接对象
+  ReactorHttp.vcxproj -> C:\Users\zouhao\Desktop\ReactorHttp\bin\x64\Debug\ReactorHttp.out

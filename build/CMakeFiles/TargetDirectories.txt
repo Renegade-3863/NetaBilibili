@@ -1,0 +1,4 @@
+/Users/jiechengheren/NetaBilibili/build/CMakeFiles/netaBilibili.dir
+/Users/jiechengheren/NetaBilibili/build/CMakeFiles/test.dir
+/Users/jiechengheren/NetaBilibili/build/CMakeFiles/edit_cache.dir
+/Users/jiechengheren/NetaBilibili/build/CMakeFiles/rebuild_cache.dir

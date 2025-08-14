@@ -1,0 +1,20 @@
+# FROM 获取基础镜像
+FROM ubuntu:22.04
+
+# 在对应的映像中运行下面的命令，安装必要的编译工具和库
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    cmake \
+    cmake \
+    gcc \
+    g++ \
+    make \
+    libssl-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+# 核心步骤：把本地的代码复制到容器中，用于后续在对应环境下的编译和运行
+COPY . /app
+
+RUN mkdir build && cd build && cmake .. && make
