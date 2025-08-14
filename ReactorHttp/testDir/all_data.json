@@ -1,0 +1,13 @@
+{
+    "CheckIn": "9",
+    "AirCon": "999",
+    "Fan": "999",
+    "Off": "999",
+    "Washer": "999\n999\n999",
+    "Dryer": "999\n999\n999",
+    "ToiletUse":"999",
+    "ToiletAvail": "999",
+    "BathUse": "999",
+    "BathAvail": "999",
+    "Weather": "Sunny"
+}
