@@ -1,8 +1,0 @@
-[
-{
-  "directory": "/Users/jiechengheren/NetaBilibili/build",
-  "command": "/usr/bin/clang++ -isystem /Users/jiechengheren/vcpkg/installed/arm64-osx/include -g -std=gnu++17 -arch arm64 -o CMakeFiles/netaBilibili.dir/src/main.cpp.o -c /Users/jiechengheren/NetaBilibili/src/main.cpp",
-  "file": "/Users/jiechengheren/NetaBilibili/src/main.cpp",
-  "output": "CMakeFiles/netaBilibili.dir/src/main.cpp.o"
-}
-]
