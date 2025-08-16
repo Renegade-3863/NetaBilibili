@@ -1,17 +1,30 @@
 #include "TcpServer.h"
 #include "TcpConnection.h"
 #include <arpa/inet.h>
+#include <sys/socket.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <fcntl.h>
 #include "Log.h"
 
+static int set_nonblocking(int fd)
+{
+    // è®°å½•æ ‡ç­¾
+    int flags = fcntl(fd, F_GETFL, 0);
+    if(flags == -1)
+    {
+        return -1;
+    }
+    // è®¾å®šæ ‡ç­¾
+    return fcntl(fd, F_SETFL, flags | O_NONBLOCK);
+}
+
 struct TcpServer* tcpServerInit(unsigned short port, int threadNum)
 {
     struct TcpServer* tcp = (struct TcpServer*)malloc(sizeof(struct TcpServer));
     tcp->listener = listenerInit(port);
-    // ³õÊ¼»¯µÄÊÂ¼þÑ­»·ÊÇÖ÷Ïß³ÌµÄ£¬²»ÓÃµ÷ÓÃ eventLoopInitEx º¯Êý
+    // åˆå§‹åŒ–çš„äº‹ä»¶å¾ªçŽ¯æ˜¯ä¸»çº¿ç¨‹çš„ï¼Œä¸ç”¨è°ƒç”¨ eventLoopInitEx å‡½æ•°
     tcp->mainLoop = eventLoopInit();
     tcp->threadNum = threadNum;
     tcp->threadPool = threadPoolInit(tcp->mainLoop, threadNum);
@@ -22,15 +35,15 @@ struct TcpServer* tcpServerInit(unsigned short port, int threadNum)
 struct Listener* listenerInit(unsigned short port)
 {
     struct Listener* listener = (struct Listener*)malloc(sizeof(struct Listener));
-    // 1. ÉèÖÃ¼àÌýµÄÎÄ¼þÃèÊö·û£¨fd£©
-    // Ê¹ÓÃ Ipv4 µÄ TCP Ì×½Ó×Ö£¬TCP ÊÇÁ÷Ê½Ð­Òé£¬ËùÒÔÓÃ SOCK_STREAM£¨´«Êä²ãÊ¹ÓÃµÄÊÇÁ÷Ê½Ð­Òé£©
+    // 1. è®¾ç½®ç›‘å¬çš„æ–‡ä»¶æè¿°ç¬¦ï¼ˆfdï¼‰
+    // ä½¿ç”¨ Ipv4 çš„ TCP å¥—æŽ¥å­—ï¼ŒTCP æ˜¯æµå¼åè®®ï¼Œæ‰€ä»¥ç”¨ SOCK_STREAMï¼ˆä¼ è¾“å±‚ä½¿ç”¨çš„æ˜¯æµå¼åè®®ï¼‰
     int lfd = socket(AF_INET, SOCK_STREAM, 0);
     if (lfd == -1)
     {
         perror("socket");
         return NULL;
     }
-    // 2. ÉèÖÃ¶Ë¿Ú¸´ÓÃ
+    // 2. è®¾ç½®ç«¯å£å¤ç”¨
     int opt = 1;
     int ret = setsockopt(lfd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
     if (ret == -1)
@@ -38,45 +51,64 @@ struct Listener* listenerInit(unsigned short port)
         perror("setsockopt");
         return NULL;
     }
-    // 3. °ó¶¨¶Ë¿ÚºÅ
+    // 3. ç»‘å®šç«¯å£å·
     struct sockaddr_in addr;
     addr.sin_family = AF_INET;
-    // Ö÷»úÉÏÊý¾Ý´æ´¢Ë³ÐòÎªÐ¡¶ËÐò£¬ÐèÒª×ª³ÉÍøÂç×Ö½ÚÐò£¨´ó¶Ë£©
+    // ä¸»æœºä¸Šæ•°æ®å­˜å‚¨é¡ºåºä¸ºå°ç«¯åºï¼Œéœ€è¦è½¬æˆç½‘ç»œå­—èŠ‚åºï¼ˆå¤§ç«¯ï¼‰
     addr.sin_port = htons(port);
-    // ÉèÖÃ 0 µØÖ·£¬±íÊ¾¿ÉÒÔ°ó¶¨±¾»úËùÓÐµÄ IP µØÖ·
+    // è®¾ç½® 0 åœ°å€ï¼Œè¡¨ç¤ºå¯ä»¥ç»‘å®šæœ¬æœºæ‰€æœ‰çš„ IP åœ°å€
     addr.sin_addr.s_addr = INADDR_ANY;
-    // °ó¶¨ÎÄ¼þÃèÊö·ûºÍÌ×½Ó×ÖµØÖ·
+    // ç»‘å®šæ–‡ä»¶æè¿°ç¬¦å’Œå¥—æŽ¥å­—åœ°å€
     ret = bind(lfd, (struct sockaddr*)(&addr), sizeof(addr));
     if (ret == -1)
     {
         perror("bind");
         return NULL;
     }
-    // 4. ÉèÖÃ¼àÌý
+    // 4. è®¾ç½®ç›‘å¬
     //printf("Listening on port %d\n", port);
     ret = listen(lfd, 128);
-    //// ÉèÖÃ·Ç×èÈûµÄ¼àÌýÄ£Ê½
-    //int flags = fcntl(lfd, F_GETFL, 0);
-    //fcntl(lfd, F_SETFL, flags | O_NONBLOCK);
+    if(ret == -1)
+    {
+        perror("listen");
+        return NULL;
+    }
+    // è®¾å®šéžé˜»å¡ž
+    if(set_nonblocking(lfd) == -1)
+    {
+        perror("set_nonblocking listener");
+        return NULL;
+    }
     listener->lfd = lfd;
     listener->port = port;
-    // 5. ·µ»Ø¼àÌýµÄÎÄ¼þÃèÊö·û
+    // 5. è¿”å›žç›‘å¬çš„æ–‡ä»¶æè¿°ç¬¦
     return listener;
 }
 
-// ºÍ¿Í»§¶Ë½¨Á¢Á¬½Ó£¬Òªµ÷ÓÃ accept º¯Êý
+// å’Œå®¢æˆ·ç«¯å»ºç«‹è¿žæŽ¥ï¼Œè¦è°ƒç”¨ accept å‡½æ•°
 static int acceptConnection(void* arg)
 {
     struct TcpServer* server = (struct TcpServer*)arg;
-    // µÚ¶þ¸ö²ÎÊýÓÃÀ´±£´æÓë·þÎñÆ÷½¨Á¢Á¬½ÓµÄ¿Í»§¶ËµÄ IP ºÍ¶Ë¿ÚÐÅÏ¢£¬HTTP ·þÎñÆ÷²»ÐèÒª¼ÇÂ¼Õâ²¿·ÖÐÅÏ¢
-    // µÚÈý¸ö²ÎÊýÓÃÓÚÃèÊöÌ×½Ó×ÖµÄ³¤¶È£¬Ò²²»ÐèÒª
+    // ç¬¬äºŒä¸ªå‚æ•°ç”¨æ¥ä¿å­˜ä¸ŽæœåŠ¡å™¨å»ºç«‹è¿žæŽ¥çš„å®¢æˆ·ç«¯çš„ IP å’Œç«¯å£ä¿¡æ¯ï¼ŒHTTP æœåŠ¡å™¨ä¸éœ€è¦è®°å½•è¿™éƒ¨åˆ†ä¿¡æ¯
+    // ç¬¬ä¸‰ä¸ªå‚æ•°ç”¨äºŽæè¿°å¥—æŽ¥å­—çš„é•¿åº¦ï¼Œä¹Ÿä¸éœ€è¦
+#ifdef __linux__
+    int cfd = accept4(server->listener->lfd, NULL, NULL, SOCK_NONBLOCK);
+    if(cfd == -1)
+    {
+        perror("accept4");
+        return -1;
+    }
+#else
     int cfd = accept(server->listener->lfd, NULL, NULL);
-    if (cfd == -1)
+    if(cfd == -1)
     {
         perror("accept");
         return -1;
     }
-    // ´ÓÏß³Ì³ØÖÐÈ¡³öÒ»¸öÏß³ÌµÄ·´Ó¦¶ÑÄ£ÐÍÊµÀý£¬À´´¦ÀíÕâ¸ö cfd
+    set_nonblocking(cfd);
+#endif
+
+    // ä»Žçº¿ç¨‹æ± ä¸­å–å‡ºä¸€ä¸ªçº¿ç¨‹çš„ååº”å †æ¨¡åž‹å®žä¾‹ï¼Œæ¥å¤„ç†è¿™ä¸ª cfd
     //printf("Accepted connection on fd: %d\n", cfd);
     struct EventLoop* evLoop = takeWorkerEventLoop(server->threadPool);
     if (evLoop == NULL)
@@ -85,7 +117,10 @@ static int acceptConnection(void* arg)
         close(cfd);
         return -1;
     }
-    // ½« cfd ·Åµ½ TcpConnection ÖÐÊáÀí
+    // è®¾ç½®å®¢æˆ·ç«¯ socket ä¸ºéžé˜»å¡ž
+    // int cflags = fcntl(cfd, F_GETFL, 0);
+    // fcntl(cfd, F_SETFL, cflags | O_NONBLOCK);
+    // å°† cfd æ”¾åˆ° TcpConnection ä¸­æ¢³ç†
     tcpConnectionInit(cfd, evLoop);
     //printf("Accepted connection on fd: %d\n", cfd);
     return 0;
@@ -93,17 +128,17 @@ static int acceptConnection(void* arg)
 
 void tcpServerRun(struct TcpServer* server)
 {
-    // Æô¶¯Ïß³Ì³Ø
+    // å¯åŠ¨çº¿ç¨‹æ± 
     threadPoolRun(server->threadPool);
-    // ³õÊ¼»¯°üº¬¼àÌýµÄÎÄ¼þÃèÊö·ûµÄ Channel ÊµÀý
+    // åˆå§‹åŒ–åŒ…å«ç›‘å¬çš„æ–‡ä»¶æè¿°ç¬¦çš„ Channel å®žä¾‹
     struct Channel* channel = channelInit(server->listener->lfd, ReadEvent, acceptConnection, NULL, NULL, server);
     //printf("Channel initialization successful\n");
-    // Ìí¼Ó "Ìí¼Ó¼àÌýÎÄ¼þÃèÊö·û" µÄÈÎÎñµ½ÈÎÎñ¶ÓÁÐÖÐ
+    // æ·»åŠ  "æ·»åŠ ç›‘å¬æ–‡ä»¶æè¿°ç¬¦" çš„ä»»åŠ¡åˆ°ä»»åŠ¡é˜Ÿåˆ—ä¸­
     eventLoopAddTask(server->mainLoop, channel, ADD);
     //printf("Adding Channel Task successful\n");
-    // Æô¶¯·´Ó¦¶ÑÄ£ÐÍ
+    // å¯åŠ¨ååº”å †æ¨¡åž‹
     //printf("Running EventLoop\n");    
-    Debug("·þÎñÆ÷³ÌÐòÒÑÆô¶¯...");
+    Debug("æœåŠ¡å™¨ç¨‹åºå·²å¯åŠ¨...");
     eventLoopRun(server->mainLoop);
 
 }

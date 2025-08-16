@@ -1,6 +1,7 @@
 ﻿#include <stdio.h>
 #include <unistd.h>
 #include <stdlib.h>
+#include <signal.h>
 #include "TcpServer.h"
 
 int main(int argc, char* argv[])
@@ -15,6 +16,9 @@ int main(int argc, char* argv[])
     unsigned short port = atoi(argv[1]);
     // 把当前服务器进程的工作目录修改为当前程序的工作目录
     chdir(argv[2]);
+
+    // 忽略 SIGPIPE，避免向已关闭 socket 写入时整个进程被终止
+    signal(SIGPIPE, SIG_IGN);
 
     // 启动服务器实例
     struct TcpServer* server = tcpServerInit(port, 225);

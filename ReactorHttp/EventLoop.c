@@ -13,18 +13,18 @@ struct EventLoop* eventLoopInit()
     return eventLoopInitEx(NULL);
 }
 
-// Ğ´Êı¾İ
+// Ğ´ï¿½ï¿½ï¿½ï¿½
 void taskWakeUp(struct EventLoop* evLoop)
 {
-    const char* msg = "ÎÒÊÇÒª³ÉÎªº£ÔôÍõµÄÄĞÈË!!!";
+    const char* msg = "ï¿½ï¿½ï¿½ï¿½Òªï¿½ï¿½Îªï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½!!!";
     write(evLoop->socketPair[0], msg, strlen(msg));
 }
 
-// ¶ÁÊı¾İ
+// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 int readLocalMessage(void* arg)
 {
     struct EventLoop* evLoop = (struct EventLoop*)arg;
-    // ÓÃÓÚ»º´æÊı¾İ
+    // ï¿½ï¿½ï¿½Ú»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
     char buf[256];
     read(evLoop->socketPair[1], buf, sizeof(buf));
     return 0;
@@ -34,28 +34,28 @@ struct EventLoop* eventLoopInitEx(const char* threadName)
 {
     struct EventLoop* evLoop = (struct EventLoop*)malloc(sizeof(struct EventLoop));
     evLoop->isQuit = false;
-    // ÄÄ¸öÏß³ÌÖ´ĞĞÁËÕâ¸ö eventLoopInitEx º¯Êı£¬µÃµ½µÄÏß³Ì ID ¾ÍÊÇ¶ÔÓ¦Ïß³ÌµÄ ID
+    // ï¿½Ä¸ï¿½ï¿½ß³ï¿½Ö´ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ eventLoopInitEx ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ãµï¿½ï¿½ï¿½ï¿½ß³ï¿½ ID ï¿½ï¿½ï¿½Ç¶ï¿½Ó¦ï¿½ß³Ìµï¿½ ID
     evLoop->threadID = pthread_self();
     pthread_mutex_init(&evLoop->mutex, NULL);
     strcpy(evLoop->threadName, threadName == NULL ? "MainThread" : threadName);
-    // ÏÈÄ¬ÈÏÊ¹ÓÃĞ§ÂÊ×îÓÅµÄ EpollDispatcher
+    // ï¿½ï¿½Ä¬ï¿½ï¿½Ê¹ï¿½ï¿½Ğ§ï¿½ï¿½ï¿½ï¿½ï¿½Åµï¿½ EpollDispatcher
     evLoop->dispatcher = &EpollDistatcher;
     evLoop->dispatcherData = evLoop->dispatcher->init();
-    // Á´±í
+    // ï¿½ï¿½ï¿½ï¿½
     evLoop->head = evLoop->tail = NULL;
     // map
     evLoop->channelMap = channelMapInit(128);
-    // Ïß³Ì¼äĞÅÏ¢´«Êä£¬Ê¹ÓÃ AF_UNIX ½øĞĞ±¾»úÄÚµÄ UNIX Ì×½Ó×ÖÍ¨ĞÅ¼´¿É
+    // ï¿½ß³Ì¼ï¿½ï¿½ï¿½Ï¢ï¿½ï¿½ï¿½ä£¬Ê¹ï¿½ï¿½ AF_UNIX ï¿½ï¿½ï¿½Ğ±ï¿½ï¿½ï¿½ï¿½Úµï¿½ UNIX ï¿½×½ï¿½ï¿½ï¿½Í¨ï¿½Å¼ï¿½ï¿½ï¿½
     int ret = socketpair(AF_UNIX, SOCK_STREAM, 0, evLoop->socketPair);
     if (ret == -1)
     {
         perror("socketpair");
         exit(0);
     }
-    // Ö¸¶¨¹æÔò£ºevLoop->socketPair[0] ·¢ËÍÊı¾İ£¬evLoop->socketPair[1] ½ÓÊÕÊı¾İ
-    // Ò²¾ÍÊÇËµ£¬socketPair[1] ĞèÒª·Åµ½ select, poll, epoll µÄ¼ì²â¼¯ºÏÖĞ
+    // Ö¸ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½evLoop->socketPair[0] ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½İ£ï¿½evLoop->socketPair[1] ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+    // Ò²ï¿½ï¿½ï¿½ï¿½Ëµï¿½ï¿½socketPair[1] ï¿½ï¿½Òªï¿½Åµï¿½ select, poll, epoll ï¿½Ä¼ï¿½â¼¯ï¿½ï¿½ï¿½ï¿½
     struct Channel* channel = channelInit(evLoop->socketPair[1], ReadEvent, readLocalMessage, NULL, NULL, evLoop);
-    // channel Ìí¼Óµ½ÈÎÎñ¶ÓÁĞÖĞ
+    // channel ï¿½ï¿½ï¿½Óµï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
     eventLoopAddTask(evLoop, channel, ADD);
     return evLoop;
 }
@@ -63,18 +63,18 @@ struct EventLoop* eventLoopInitEx(const char* threadName)
 int eventLoopRun(struct EventLoop* evLoop)
 {
     assert(evLoop != NULL);
-    // È¡³öÊÂ¼ş·Ö·¢ºÍ¼ì²âÄ£ĞÍ
+    // È¡ï¿½ï¿½ï¿½Â¼ï¿½ï¿½Ö·ï¿½ï¿½Í¼ï¿½ï¿½Ä£ï¿½ï¿½
     struct Dispatcher* dispatcher = evLoop->dispatcher;
-    // ±È½ÏÏß³Ì ID ÊÇ·ñÕı³££¬Èç¹ûÊÇÖ÷Ïß³Ì£¬²»ÒªÖ´ĞĞ Run º¯Êı£¬ËüÖ»¸ºÔğ½¨Á¢Á¬½Ó£¬²¢ÍùÈÎÎñ¶ÓÁĞÖĞÌí¼ÓÈÎÎñ
+    // ï¿½È½ï¿½ï¿½ß³ï¿½ ID ï¿½Ç·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ß³Ì£ï¿½ï¿½ï¿½ÒªÖ´ï¿½ï¿½ Run ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ó£ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
     if (evLoop->threadID != pthread_self())
     {
         return -1;
     }
-    // Ñ­»·½øĞĞÊÂ¼ş´¦Àí
+    // Ñ­ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Â¼ï¿½ï¿½ï¿½ï¿½ï¿½
     while (!evLoop->isQuit)
     {
-        dispatcher->dispatch(evLoop, 2);                // ³¬Ê±Ê±³¤ 2s
-        // Ö»ÓĞ×ÓÏß³Ì»áÖ´ĞĞµ½ÕâÀï£¬ËüÔÚ´¦ÀíÊÂ¼şµÄÍ¬Ê±£¬Ò²ĞèÒªÔÚÈÎºÎÓĞ±ØÒªµÄÊ±ºòÀ´´¦Àí×Ô¼ºÈÎÎñ¶ÓÁĞÖĞµÄÈÎÎñ
+        dispatcher->dispatch(evLoop, 2);                // ï¿½ï¿½Ê±Ê±ï¿½ï¿½ 2s
+        // Ö»ï¿½ï¿½ï¿½ï¿½ï¿½ß³Ì»ï¿½Ö´ï¿½Ğµï¿½ï¿½ï¿½ï¿½ï£¬ï¿½ï¿½ï¿½Ú´ï¿½ï¿½ï¿½ï¿½Â¼ï¿½ï¿½ï¿½Í¬Ê±ï¿½ï¿½Ò²ï¿½ï¿½Òªï¿½ï¿½ï¿½Îºï¿½ï¿½Ğ±ï¿½Òªï¿½ï¿½Ê±ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ô¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ğµï¿½ï¿½ï¿½ï¿½ï¿½
         //printf("Thread %s is processing events...\n", evLoop->threadName);
         eventLoopProcessTask(evLoop);
     }
@@ -87,7 +87,7 @@ int eventActivate(struct EventLoop* evLoop, int fd, int event)
     {
         return -1;
     }
-    // È¡³ö channel
+    // È¡ï¿½ï¿½ channel
     struct Channel* channel = evLoop->channelMap->list[fd];
     assert(channel->fd == fd);
     if (event & ReadEvent && channel->readCallback)
@@ -103,50 +103,50 @@ int eventActivate(struct EventLoop* evLoop, int fd, int event)
 
 int eventLoopAddTask(struct EventLoop* evLoop, struct Channel* channel, int type)
 {
-    // ¼ÓËø£¬±£»¤¹²Ïí×ÊÔ´
+    // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ô´
     pthread_mutex_lock(&evLoop->mutex);
-    // ´´½¨ĞÂ½Úµã
+    // ï¿½ï¿½ï¿½ï¿½ï¿½Â½Úµï¿½
     struct ChannelElement* node = (struct ChannelElement*)malloc(sizeof(struct ChannelElement));
     node->channel = channel;
     node->type = type;
     node->next = NULL;
-    // Á´±íÎª¿Õ
+    // ï¿½ï¿½ï¿½ï¿½Îªï¿½ï¿½
     if (evLoop->head == NULL)
     {
         evLoop->head = evLoop->tail = node;
     }
     else
     {
-        evLoop->tail->next = node;          // Ìí¼Ó
-        evLoop->tail = node;                // ºóÒÆ
+        evLoop->tail->next = node;          // ï¿½ï¿½ï¿½ï¿½
+        evLoop->tail = node;                // ï¿½ï¿½ï¿½ï¿½
     }
     pthread_mutex_unlock(&evLoop->mutex);
-    // ´¦Àí½Úµã
+    // ï¿½ï¿½ï¿½ï¿½ï¿½Úµï¿½
     /*
-     * Ï¸½Ú£º
-     *  1. ¶ÔÓÚÁ´±í½ÚµãµÄÌí¼Ó£º¿ÉÄÜÊÇµ±Ç°Ïß³ÌÒ²¿ÉÄÜÊÇÆäËüÏß³Ì£¨Ö÷Ïß³Ì£©
-     *      1). ĞŞ¸Ä fd µÄÊÂ¼ş£¬µ±Ç°×ÓÏß³Ì·¢Æğ£¬µ±Ç°×ÓÏß³Ì´¦Àí
-     *      2). Ìí¼ÓĞÂµÄ fd£¬Ìí¼ÓÈÎÎñ½ÚµãµÄ²Ù×÷ÊÇÓÉÖ÷Ïß³Ì·¢ÆğµÄ
-     *  2. ²»ÄÜÈÃÖ÷Ïß³Ì´¦ÀíÈÎÎñ¶ÓÁĞ£¬ĞèÒªÓÉµ±Ç°µÄ×ÓÏß³ÌÀ´´¦Àí
+     * Ï¸ï¿½Ú£ï¿½
+     *  1. ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Úµï¿½ï¿½ï¿½ï¿½ï¿½Ó£ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Çµï¿½Ç°ï¿½ß³ï¿½Ò²ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ß³Ì£ï¿½ï¿½ï¿½ï¿½ß³Ì£ï¿½
+     *      1). ï¿½Ş¸ï¿½ fd ï¿½ï¿½ï¿½Â¼ï¿½ï¿½ï¿½ï¿½ï¿½Ç°ï¿½ï¿½ï¿½ß³Ì·ï¿½ï¿½ğ£¬µï¿½Ç°ï¿½ï¿½ï¿½ß³Ì´ï¿½ï¿½ï¿½
+     *      2). ï¿½ï¿½ï¿½ï¿½ï¿½Âµï¿½ fdï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Úµï¿½Ä²ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ß³Ì·ï¿½ï¿½ï¿½ï¿½
+     *  2. ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ß³Ì´ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ğ£ï¿½ï¿½ï¿½Òªï¿½Éµï¿½Ç°ï¿½ï¿½ï¿½ï¿½ï¿½ß³ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
     */
     if (evLoop->threadID == pthread_self())
     {
-        // µ±Ç°×ÓÏß³Ì -- Ö±½Ó´¦ÀíÈÎÎñ¶ÓÁĞÖĞµÄËùÓĞÈÎÎñ
+        // ï¿½ï¿½Ç°ï¿½ï¿½ï¿½ß³ï¿½ -- Ö±ï¿½Ó´ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ğµï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
         eventLoopProcessTask(evLoop);
     }
     else
     {
-        // Ö÷Ïß³Ì  -- Í¨Öª×ÓÏß³Ì´¦ÀíÈÎÎñ¶ÓÁĞÖĞµÄÈÎÎñ
-        // 1. ×ÓÏß³ÌÔÚ¹¤×÷ 2. ×ÓÏß³Ì±»×èÈûÁË£ºselect, poll, epoll ÖĞµÄ timeout ²ÎÊı
-        // ÈçºÎ½â¾öÇé¿ö 2£¿
-        // Íù select£¬poll£¬epoll º¯Êı¶ÔÓ¦µÄ¼ì²â¼¯ºÏÖĞ¶îÍâÌí¼ÓÒ»¸ö¶ÀÊôÓÚ·şÎñÆ÷µÄ "¼¤»îÎÄ¼şÃèÊö·û"
-        // µ±Ö÷Ïß³ÌÏëÈÃ×ÓÏß³ÌÀ´´¦ÀíÈÎÎñ¶ÓÁĞÖĞµÄ½áµãµÄÊ±ºò£¬¾ÍÍùÕâ¸öÎÄ¼şÃèÊö·ûÖĞĞ´ÈëÊı¾İ¼´¿É
-        // Á½ÖÖ½â¾ö·½°¸£º
+        // ï¿½ï¿½ï¿½ß³ï¿½  -- Í¨Öªï¿½ï¿½ï¿½ß³Ì´ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ğµï¿½ï¿½ï¿½ï¿½ï¿½
+        // 1. ï¿½ï¿½ï¿½ß³ï¿½ï¿½Ú¹ï¿½ï¿½ï¿½ 2. ï¿½ï¿½ï¿½ß³Ì±ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ë£ï¿½select, poll, epoll ï¿½Ğµï¿½ timeout ï¿½ï¿½ï¿½ï¿½
+        // ï¿½ï¿½Î½ï¿½ï¿½ï¿½ï¿½ï¿½ 2ï¿½ï¿½
+        // ï¿½ï¿½ selectï¿½ï¿½pollï¿½ï¿½epoll ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ó¦ï¿½Ä¼ï¿½â¼¯ï¿½ï¿½ï¿½Ğ¶ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ò»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ú·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ "ï¿½ï¿½ï¿½ï¿½ï¿½Ä¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½"
+        // ï¿½ï¿½ï¿½ï¿½ï¿½ß³ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ß³ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ĞµÄ½ï¿½ï¿½ï¿½Ê±ï¿½ò£¬¾ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ä¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ğ´ï¿½ï¿½ï¿½ï¿½ï¿½İ¼ï¿½ï¿½ï¿½
+        // ï¿½ï¿½ï¿½Ö½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
         /*
-            1. pipe º¯Êı £¨Ö÷ÒªÓÃÓÚ½ø³Ì¼äÍ¨ĞÅ£¬Ò²¿ÉÓÃÓÚÏß³Ì¼äÍ¨ĞÅ
-            2. socket pair £¨Ì×½Ó×ÖÍ¨ĞÅ£©
+            1. pipe ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½Òªï¿½ï¿½ï¿½Ú½ï¿½ï¿½Ì¼ï¿½Í¨ï¿½Å£ï¿½Ò²ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ß³Ì¼ï¿½Í¨ï¿½ï¿½
+            2. socket pair ï¿½ï¿½ï¿½×½ï¿½ï¿½ï¿½Í¨ï¿½Å£ï¿½
         */
-        // Ö÷Ïß³ÌÄ¬ÈÏ×ÓÏß³ÌÔÚ×èÈû£¬µ÷ÓÃ taskWakeUp ¶Ô×ÓÏß³Ì½øĞĞ "»½ĞÑ"
+        // ï¿½ï¿½ï¿½ß³ï¿½Ä¬ï¿½ï¿½ï¿½ï¿½ï¿½ß³ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ taskWakeUp ï¿½ï¿½ï¿½ï¿½ï¿½ß³Ì½ï¿½ï¿½ï¿½ "ï¿½ï¿½ï¿½ï¿½"
         taskWakeUp(evLoop);
     }
     return 0;
@@ -154,38 +154,38 @@ int eventLoopAddTask(struct EventLoop* evLoop, struct Channel* channel, int type
 
 int eventLoopProcessTask(struct EventLoop* evLoop)
 {
-    // ¼ÓËø£¬±£»¤ÈÎÎñ¶ÓÁĞ
+    // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
     pthread_mutex_lock(&evLoop->mutex);
-    // È¡³öÍ·½áµã
+    // È¡ï¿½ï¿½Í·ï¿½ï¿½ï¿½
     struct ChannelElement* head = evLoop->head;
     while (head)
     {
         struct Channel* channel = head->channel;
         if (head->type == ADD)
         {
-            // Ìí¼Ó
+            // ï¿½ï¿½ï¿½ï¿½
             //printf("Adding channel with fd: %d\n", channel->fd);
             eventLoopAdd(evLoop, channel);
         }
         else if (head->type == DELETE)
         {
-            // É¾³ı
+            // É¾ï¿½ï¿½
             //printf("Removing channel with fd: %d\n", channel->fd);
             eventLoopRemove(evLoop, channel);
         }
         else if (head->type == MODIFY)
         {
-            // ĞŞ¸Ä
+            // ï¿½Ş¸ï¿½
             //printf("Modifying channel with fd: %d\n", channel->fd);
             eventLoopModify(evLoop, channel);
         }
-        // É¾³ı´¦ÀíÍê³ÉµÄ½áµã
+        // É¾ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ÉµÄ½ï¿½ï¿½
         struct ChannelElement* tmp = head;
         head = head->next;
         free(tmp);
         tmp = NULL;
     }
-    // Çå¿ÕÈÎÎñ¶ÓÁĞ£¨ÊÇ·ñĞèÒª°ÑÕâÒ»²½ÌáÇ°µ½ while Ñ­»·ÖĞ£¿£©
+    // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ğ£ï¿½ï¿½Ç·ï¿½ï¿½ï¿½Òªï¿½ï¿½ï¿½ï¿½Ò»ï¿½ï¿½ï¿½ï¿½Ç°ï¿½ï¿½ while Ñ­ï¿½ï¿½ï¿½Ğ£ï¿½ï¿½ï¿½
     evLoop->head = evLoop->tail = NULL;
     pthread_mutex_unlock(&evLoop->mutex);
     return 0;
@@ -197,18 +197,18 @@ int eventLoopAdd(struct EventLoop* evLoop, struct Channel* channel)
     struct ChannelMap* channelMap = evLoop->channelMap;
     if (fd >= channelMap->size)
     {
-        // channelMap ÖĞÃ»ÓĞ×ã¹»µÄ¿Õ¼äÀ´´æ´¢ fd - channel µÄ¼üÖµ¶Ô
-        // ĞèÒªÀ©Èİ
-        // À©ÈİÊ§°ÜµÄ»°£¬Ö±½Ó·µ»Ø -1
+        // channelMap ï¿½ï¿½Ã»ï¿½ï¿½ï¿½ã¹»ï¿½Ä¿Õ¼ï¿½ï¿½ï¿½ï¿½æ´¢ fd - channel ï¿½Ä¼ï¿½Öµï¿½ï¿½
+        // ï¿½ï¿½Òªï¿½ï¿½ï¿½ï¿½
+        // ï¿½ï¿½ï¿½ï¿½Ê§ï¿½ÜµÄ»ï¿½ï¿½ï¿½Ö±ï¿½Ó·ï¿½ï¿½ï¿½ -1
         if (!makeMapRoom(channelMap, fd, sizeof(struct Channel*)))
         {
             return -1;
         }
     }
-    // ÕÒµ½ fd ¶ÔÓ¦µÄÊı×éÔªËØÎ»ÖÃ£¬²¢´æ´¢
+    // ï¿½Òµï¿½ fd ï¿½ï¿½Ó¦ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ôªï¿½ï¿½Î»ï¿½Ã£ï¿½ï¿½ï¿½ï¿½æ´¢
     if (channelMap->list[fd] == NULL)
     {
-        // Èç¹ûÓĞÎ»ÖÃ£¬¾Í½øĞĞ´æ´¢
+        // ï¿½ï¿½ï¿½ï¿½ï¿½Î»ï¿½Ã£ï¿½ï¿½Í½ï¿½ï¿½Ğ´æ´¢
         channelMap->list[fd] = channel;
         evLoop->dispatcher->add(channel, evLoop);
     }
@@ -221,8 +221,8 @@ int eventLoopRemove(struct EventLoop* evLoop, struct Channel* channel)
     struct ChannelMap* channelMap = evLoop->channelMap;
     if (fd >= channelMap->size)
     {
-        // ÒªÉ¾³ıµÄÎÄ¼şÃèÊö·û²¢Ã»´æ´¢ÔÚ channelMap ÖĞ£¬Ò²¾Í²»ÔÚ dispatcher ¼ì²âµÄ¼¯ºÏÖĞ
-        // ÎÒÃÇ²»ÓÃ×öÈÎºÎÊÂ
+        // ÒªÉ¾ï¿½ï¿½ï¿½ï¿½ï¿½Ä¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ã»ï¿½æ´¢ï¿½ï¿½ channelMap ï¿½Ğ£ï¿½Ò²ï¿½Í²ï¿½ï¿½ï¿½ dispatcher ï¿½ï¿½ï¿½Ä¼ï¿½ï¿½ï¿½ï¿½ï¿½
+        // ï¿½ï¿½ï¿½Ç²ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Îºï¿½ï¿½ï¿½
         return -1;
     }
     int ret = evLoop->dispatcher->remove(channel, evLoop);
@@ -235,8 +235,8 @@ int eventLoopModify(struct EventLoop* evLoop, struct Channel* channel)
     struct ChannelMap* channelMap = evLoop->channelMap;
     if (fd >= channelMap->size || channelMap->list[fd] == NULL)
     {
-        // ÒªÉ¾³ıµÄÎÄ¼şÃèÊö·û²¢Ã»´æ´¢ÔÚ channelMap ÖĞ£¬Ò²¾Í²»ÔÚ dispatcher ¼ì²âµÄ¼¯ºÏÖĞ
-        // ÎÒÃÇ²»ÓÃ×öÈÎºÎÊÂ
+        // ÒªÉ¾ï¿½ï¿½ï¿½ï¿½ï¿½Ä¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ã»ï¿½æ´¢ï¿½ï¿½ channelMap ï¿½Ğ£ï¿½Ò²ï¿½Í²ï¿½ï¿½ï¿½ dispatcher ï¿½ï¿½ï¿½Ä¼ï¿½ï¿½ï¿½ï¿½ï¿½
+        // ï¿½ï¿½ï¿½Ç²ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Îºï¿½ï¿½ï¿½
         return -1;
     }
     int ret = evLoop->dispatcher->modify(channel, evLoop);
@@ -245,12 +245,12 @@ int eventLoopModify(struct EventLoop* evLoop, struct Channel* channel)
 
 int destroyChannel(struct EventLoop* evLoop, struct Channel* channel)
 {
-    // É¾³ı channel ºÍ fd µÄ¶ÔÓ¦¹ØÏµ
-    // Çå¿ÕÖ¸Õë
+    // É¾ï¿½ï¿½ channel ï¿½ï¿½ fd ï¿½Ä¶ï¿½Ó¦ï¿½ï¿½Ïµ
+    // ï¿½ï¿½ï¿½Ö¸ï¿½ï¿½
     evLoop->channelMap->list[channel->fd] = NULL;
-    // ¹Ø±ÕÎÄ¼şÃèÊö·û
+    // ï¿½Ø±ï¿½ï¿½Ä¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
     close(channel->fd);
-    // ÊÍ·Å channel ÄÚ´æ
+    // ï¿½Í·ï¿½ channel ï¿½Ú´ï¿½
     free(channel);
     return 0;
 }

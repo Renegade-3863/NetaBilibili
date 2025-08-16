@@ -75,9 +75,8 @@ void httpResponsePrepareMsg(struct TcpConnection* conn, struct HttpResponse* res
     // ����
     bufferAppendString(sendBuf, "\r\n");
 #ifndef MSG_SEND_AUTO
-    // дһ���֣��ͷ�һ���֣��Ȱ���Ӧͷ����ȥ
+    // 同步发送头部+短体数据（非事件驱动模式）
     bufferSendData(sendBuf, socket);
-    //printf("Sending Data...!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n\n\n");
 #endif
     // Ҫ�ظ����ͻ��˵�����
     //printf("Calling sendDataFunc at address %p\n", response->sendDataFunc);

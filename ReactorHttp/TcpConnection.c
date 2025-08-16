@@ -1,22 +1,20 @@
 #include "TcpConnection.h"
 #include <stdlib.h>
 #include <stdio.h>
+#include <errno.h>
 #include "Log.h"
 
-
-static int processRead(void* arg)
+static int processRead(void *arg)
 {
-    struct TcpConnection* conn = (struct TcpConnection*)arg;
-    //printf("Process Read on fd %d\n", conn->response->statusCode);
-    // ½ÓÊÕÊý¾Ý
-    int count = bufferSocketRead(conn->readBuf, conn->channel->fd);
+    struct TcpConnection *conn = (struct TcpConnection *)arg;
 
-    Debug("½ÓÊÕµ½µÄ http ÇëÇóÊý¾Ý£º%s", conn->readBuf->data + conn->readBuf->readPos);
-    // Èç¹û conn->isWebSocket Îª true£¬ÄÇÃ´ËµÃ÷ÊÇ WebSocket Á¬½Ó£¬ÎÒÃÇ¾ÍÒªÓÃ WebSocket Ð­ÒéÀ´½øÐÐ´¦Àí
+    // 1. å¤„ç† WebSocket è¿žæŽ¥çš„é€»è¾‘
+    // Debug("ï¿½ï¿½ï¿½Õµï¿½ï¿½ï¿½ http ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ý£ï¿½%s", conn->readBuf->data + conn->readBuf->readPos);
+    // ï¿½ï¿½ï¿½ conn->isWebSocket Îª trueï¿½ï¿½ï¿½ï¿½Ã´Ëµï¿½ï¿½ï¿½ï¿½ WebSocket ï¿½ï¿½ï¿½Ó£ï¿½ï¿½ï¿½ï¿½Ç¾ï¿½Òªï¿½ï¿½ WebSocket Ð­ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ð´ï¿½ï¿½ï¿½
     if (conn->isWebSocket)
     {
         uint8_t opcode = 0;
-        char payload[40960] = { 0 };
+        char payload[40960] = {0};
         size_t payloadLen = 0;
         int flag = 0;
         // DEBUG Msg
@@ -27,123 +25,266 @@ static int processRead(void* arg)
             printf("opcode = %d\n", opcode);
             totalLen += flag;
             printf("totalLen = %d\n", totalLen);
-            if(flag < 0)
+            if (flag < 0)
             {
-                // Èç¹û flag < 0£¬¿ÉÄÜÊÇÊý¾Ý²»ÍêÕû£¬Ò²¿ÉÄÜÊÇ½âÎöÒÑ¾­Íê³É
+                // ï¿½ï¿½ï¿½ flag < 0ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ý²ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ò²ï¿½ï¿½ï¿½ï¿½ï¿½Ç½ï¿½ï¿½ï¿½ï¿½Ñ¾ï¿½ï¿½ï¿½ï¿½
                 break;
             }
-            //printf("Parsed WebSocket frame with opcode: %d, payload length: %zu\n", opcode, payloadLen);
+            // printf("Parsed WebSocket frame with opcode: %d, payload length: %zu\n", opcode, payloadLen);
             if (opcode == WS_OPCODE_TEXT)
             {
-                // ´¦Àí WebSocket ÎÄ±¾ÏûÏ¢
-                //printf("Received WebSocket text message: %s\n", payload);
-                // »ØÏÔ
+                // ï¿½ï¿½ï¿½ï¿½ WebSocket ï¿½Ä±ï¿½ï¿½ï¿½Ï¢
+                // printf("Received WebSocket text message: %s\n", payload);
+                // ï¿½ï¿½ï¿½ï¿½
                 sendWebSocketTextFrame(conn, payload);
             }
             else if (opcode == WS_OPCODE_CLOSE)
             {
-                // ¿Í»§¶Ë·¢À´ÁË¹Ø±ÕÁ¬½ÓµÄ WebSocket Ö¡
-                // Ìí¼Ó¹Ø±ÕÁ¬½ÓµÄÈÎÎñµ½ÈÎÎñ¶ÓÁÐÖÐ£¬µÈ´ýÏß³Ì´¦Àí
-                //printf("Received WebSocket close frame, closing connection.\n");
+                // ï¿½Í»ï¿½ï¿½Ë·ï¿½ï¿½ï¿½ï¿½Ë¹Ø±ï¿½ï¿½ï¿½ï¿½Óµï¿½ WebSocket Ö¡
+                // ï¿½ï¿½ï¿½Ó¹Ø±ï¿½ï¿½ï¿½ï¿½Óµï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ð£ï¿½ï¿½È´ï¿½ï¿½ß³Ì´ï¿½ï¿½ï¿½
+                // printf("Received WebSocket close frame, closing connection.\n");
                 eventLoopAddTask(conn->evLoop, conn->channel, DELETE);
                 printf("WebSocket connection closed.\n");
-                break; // ÍË³öÑ­»·
+                break; // ï¿½Ë³ï¿½Ñ­ï¿½ï¿½
             }
-            // ÔÝÊ±²»´¦ÀíÆäËûÀàÐÍµÄ WebSocket Ö¡
+            // ï¿½ï¿½Ê±ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Íµï¿½ WebSocket Ö¡
         }
-        //if (flag < 0)
+        // if (flag < 0)
         //{
-        //    // ½âÎöÊ§°Ü£¬¿ÉÄÜÊÇÊý¾Ý²»ÍêÕû
-        //    return -1;
-        //}
-        // Èç¹û opcode ÊÇ WS_OPCODE_CLOSE£¬ÄÇÃ´ËµÃ÷¿Í»§¶Ë·¢À´ÁË¹Ø±ÕÁ¬½ÓµÄ WebSocket Ö¡
-        // ÎÒÃÇ¾Í²»ÄÜÔÙ¼ÌÐø´¦ÀíÕâ¸öÁ¬½ÓÁË
-        // Ö±½Ó·µ»Ø¼´¿É
+        //     // ï¿½ï¿½ï¿½ï¿½Ê§ï¿½Ü£ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ý²ï¿½ï¿½ï¿½ï¿½ï¿½
+        //     return -1;
+        // }
+        //  ï¿½ï¿½ï¿½ opcode ï¿½ï¿½ WS_OPCODE_CLOSEï¿½ï¿½ï¿½ï¿½Ã´Ëµï¿½ï¿½ï¿½Í»ï¿½ï¿½Ë·ï¿½ï¿½ï¿½ï¿½Ë¹Ø±ï¿½ï¿½ï¿½ï¿½Óµï¿½ WebSocket Ö¡
+        //  ï¿½ï¿½ï¿½Ç¾Í²ï¿½ï¿½ï¿½ï¿½Ù¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+        //  Ö±ï¿½Ó·ï¿½ï¿½Ø¼ï¿½ï¿½ï¿½
         if (opcode == WS_OPCODE_CLOSE)
         {
             return 0;
         }
-        // ·ñÔò£¬¿Í»§¶Ë·¢À´µÄ WebSocket Ö¡ÒÑ¾­±»´¦ÀíÍê±Ï
+        // ï¿½ï¿½ï¿½ò£¬¿Í»ï¿½ï¿½Ë·ï¿½ï¿½ï¿½ï¿½ï¿½ WebSocket Ö¡ï¿½Ñ¾ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
         return 0;
     }
-    //printf("Read %d bytes from fd %d\n", count, conn->channel->fd);
-    if (count > 0)
+
+    // 2. å¤„ç†å¸¸è§„ HTTP è¿žæŽ¥çš„é€»è¾‘
+    // printf("Process Read on fd %d\n", conn->response->statusCode);
+    // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+    // int count = bufferSocketRead(conn->readBuf, conn->channel->fd);
+
+    // å¾ªçŽ¯è¯»å–ï¼ŒçŸ¥é“ EAGAIN / EWOULDBLOCK / error / peer close
+    while (1)
     {
-            // ½ÓÊÕµ½ÁË Http ÇëÇó£¬½âÎö Http ÇëÇó
-            int socket = conn->channel->fd;
+        int rc = bufferSocketRead(conn->readBuf, conn->channel->fd);
+        // è¿˜æœ‰æ•°æ®æœªå¤„ç†å®Œï¼Œå¯¹äºŽ ET æ¨¡å¼ï¼Œå¿…é¡»ç»§ç»­å¾ªçŽ¯ä»¥å°½å¯èƒ½è¯»å®Œå†…æ ¸ç¼“å†²
+        if (rc > 0)
+        {
+            continue;
+        }
+        // å¦åˆ™ï¼Œå¦‚æžœ rc == 0ï¼Œè¡¨ç¤ºå¯¹ç«¯å·²ç»æ­£å¸¸å…³é—­äº†è¿žæŽ¥ï¼Œæˆ‘ä»¬ä¹Ÿæ²¡å¿…è¦å†è¯»äº†
+        else if (rc == 0)
+        {
+            break;
+        }
+        // å¦åˆ™ï¼Œrc è¿”å›ž -2ï¼Œè¯´æ˜Žå¯¹ç«¯éžæ­£å¸¸å…³é—­äº†è¿žæŽ¥ï¼Œæˆ‘ä»¬éœ€è¦å‘ŠçŸ¥ä»»åŠ¡é˜Ÿåˆ—å…³é—­å¯¹è¿™ä¸ªæ–‡ä»¶æè¿°ç¬¦çš„æ£€æµ‹
+        else if (rc == -2)
+        {
+            // æ·»åŠ åˆ é™¤æ£€æµ‹çš„ä»»åŠ¡åˆ°äº‹ä»¶å¾ªçŽ¯
+            eventLoopAddTask(conn->evLoop, conn->channel, DELETE);
+            return 0;
+        }
+        else // å¦åˆ™ï¼Œè¯´æ˜Žè¿™ä¸ª -1 æ˜¯ä¸€ä¸ªçœŸå®žçš„é”™è¯¯ï¼Œæˆ‘ä»¬ä¹Ÿå¿…é¡»ç»ˆæ­¢è¿žæŽ¥
+        {
+            eventLoopAddTask(conn->evLoop, conn->channel, DELETE);
+            return -1;
+        }
+    }
+
+    // printf("Read %d bytes from fd %d\n", count, conn->channel->fd);
+    int socket = conn->channel->fd;
+    while (bufferReadableSize(conn->readBuf) > 0)
+    {
 #ifdef MSG_SEND_AUTO
-            // ÈÃ eventLoop ¼ì²â¶ÔÓ¦ÎÄ¼þÃèÊö·ûµÄÐ´ÊÂ¼þ
-            writeEventEnable(conn->channel, true);
-            eventLoopAddTask(conn->evLoop, conn->channel, MODIFY);
+        // ï¿½ï¿½ eventLoop ï¿½ï¿½ï¿½ï¿½Ó¦ï¿½Ä¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ð´ï¿½Â¼ï¿½
+        writeEventEnable(conn->channel, true);
+        eventLoopAddTask(conn->evLoop, conn->channel, MODIFY);
 #endif
-            bool flag = parseHttpRequest(conn, conn->request, conn->readBuf, conn->response, conn->writeBuf, socket);
-            //printf("Parse Http Request %s\n", flag ? "success" : "failed");
-            if (!flag)
+        ParseResult pr = parseHttpRequest(conn, conn->request, conn->readBuf, conn->response, conn->writeBuf, socket);
+        // printf("Parse Http Request %s\n", flag ? "success" : "failed");
+        if (pr == PARSE_ERROR)
+        {
+            // è§£æžé”™è¯¯ï¼šparse å¯èƒ½æ²¡æœ‰æŠŠ 400 å†™å…¥ sendBufï¼Œç¡®ä¿å†™å‡ºä¸€ä¸ª 400 å¹¶å…³é—­
+            if (bufferReadableSize(conn->writeBuf) == 0)
             {
-                // ½âÎöÊ§°ÜÁË£¬»Ø¸´Ò»¸ö¼òµ¥µÄ html
-                char* errMsg = "Http/1.1 400 Bad Request\r\n\r\n";
+                const char *errMsg = "HTTP/1.1 400 Bad Request\r\nConnection: close\r\nContent-Length: 0\r\n\r\n";
                 bufferAppendString(conn->writeBuf, errMsg);
-                // ·¢ËÍ´íÎóÐÅÏ¢
-                bufferSendData(conn->writeBuf, socket);
-                // ¶Ï¿ªÁ¬½Ó
-                // °ÑÉ¾³ý¶ÔÓ¦ÎÄ¼þÃèÊö·ûµÄÊÂ¼þµÄÈÎÎñ½»¸øÈÎÎñ¶ÓÁÐ£¬µÈ´ýÏß³Ì´¦Àí
+            }
+            // ç¡®ä¿å†™äº‹ä»¶å·²å¯ç”¨ä»¥ä¾¿æŠŠ 400 å‘å‡º
+            if (!isWriteEventEnable(conn->channel))
+            {
+                writeEventEnable(conn->channel, true);
+                eventLoopAddTask(conn->evLoop, conn->channel, MODIFY);
+            }
+            // ä¸åœ¨æ­¤ç«‹åˆ» DELETE â€”â€” åœ¨ processWrite å†™å®ŒåŽåˆ é™¤
+            break;
+        }
+        else if (pr == PARSE_INCOMPLETE)
+        {
+            // æ•°æ®ä¸å®Œæ•´ï¼Œæˆ‘ä»¬ç­‰å¾…ä¸‹ä¸€æ¬¡å¯è¯»ï¼Œä¸è¦å…³é—­è¿žæŽ¥
+            break;
+        }
+        else
+        {
+            // pr == PARSE_OK
+            // ä¸€ä¸ªè¯·æ±‚å·²è¢«è§£æžå¹¶å¤„ç†ï¼Œè‹¥äº§ç”Ÿäº†å“åº”æ•°æ®ï¼Œç¡®ä¿æ³¨å†Œå†™äº‹ä»¶ä»¥ä¾¿å‘é€
+            if (bufferReadableSize(conn->writeBuf) > 0)
+            {
+                if (!isWriteEventEnable(conn->channel))
+                {
+                    writeEventEnable(conn->channel, true);
+                    eventLoopAddTask(conn->evLoop, conn->channel, MODIFY);
+                }
+            }
+            continue;
+        }
+    }
+    // #ifndef MSG_SEND_AUTO
+    // if (!conn->isWebSocket)
+    // {
+    //     // ï¿½ï¿½ï¿½ï¿½ï¿½Ò»ï¿½ï¿½ HTTP ï¿½ï¿½ï¿½Ó£ï¿½ï¿½ï¿½Ã´ï¿½ï¿½ï¿½Û´ï¿½ï¿½ï¿½ï¿½É¹ï¿½ï¿½ï¿½ñ£¬¶ï¿½Òªï¿½ï¿½Í»ï¿½ï¿½Ë¶Ï¿ï¿½ï¿½ï¿½ï¿½ï¿½
+    //     // ï¿½ï¿½É¾ï¿½ï¿½ï¿½ï¿½Ó¦ï¿½Ä¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Â¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ñ½»¸ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ð£ï¿½ï¿½È´ï¿½ï¿½ß³Ì´ï¿½ï¿½ï¿½
+    //     eventLoopAddTask(conn->evLoop, conn->channel, DELETE);
+    // }
+    // #endif
+    return 0;
+}
+
+static int processWrite(void *arg)
+{
+    struct TcpConnection *conn = (struct TcpConnection *)arg;
+    // int count = bufferSendData(conn->writeBuf, conn->channel->fd);
+    while (bufferReadableSize(conn->writeBuf) > 0)
+    {
+        // if (bufferReadableSize(conn->writeBuf) == 0)
+        // {
+        //     // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ WebSocket ï¿½ï¿½ï¿½Ó£ï¿½ï¿½Ç¾ï¿½ï¿½ï¿½ HTTP ï¿½ï¿½ï¿½Ó£ï¿½ï¿½ï¿½ï¿½ï¿½Ã´ï¿½Í¿ï¿½ï¿½Ô¹Ø±ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+        //     if (!conn->isWebSocket)
+        //     {
+        //         // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+        //         // 1. ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Òªï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ fd ï¿½ï¿½Ð´ï¿½Â¼ï¿½ -- ï¿½Þ¸ï¿½ channel ï¿½Ð±ï¿½ï¿½ï¿½ï¿½ï¿½Â¼ï¿½
+        //         writeEventEnable(conn->channel, false);
+        //         // 2. ï¿½Þ¸ï¿½ dispatcher ï¿½Ä¼ï¿½â¼¯ï¿½ï¿½ -- ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+        //         eventLoopAddTask(conn->evLoop, conn->channel, MODIFY);
+        //         // 3. ï¿½ï¿½ï¿½Ô¿ï¿½ï¿½ï¿½É¾ï¿½ï¿½ï¿½ï¿½ï¿½Úµï¿½
+        //         eventLoopAddTask(conn->evLoop, conn->channel, DELETE);
+        //     }
+        //     // ï¿½ï¿½Ö®ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ WebSocket ï¿½ï¿½ï¿½Ó£ï¿½ï¿½ï¿½Ã´ï¿½Í²ï¿½ï¿½ï¿½Òªï¿½Ø±ï¿½ï¿½ï¿½ï¿½ï¿½
+        //     else
+        //     {
+        //         // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ë£ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½È´ï¿½ï¿½Í»ï¿½ï¿½Ë·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+        //         // Ö»ï¿½ï¿½Òªï¿½Þ¸ï¿½ Channel ï¿½Ðµï¿½ï¿½Â¼ï¿½ï¿½ï¿½ï¿½ï¿½Ê±ï¿½Ø±Õ¼ï¿½ï¿½Ð´ï¿½Â¼ï¿½
+        //         writeEventEnable(conn->channel, false);
+        //         // ï¿½ï¿½ï¿½Óµï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ð£ï¿½ï¿½È´ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ß³Ì´ï¿½ï¿½ï¿½
+        //         eventLoopAddTask(conn->evLoop, conn->channel, MODIFY);
+        //     }
+        // }
+        int n = bufferSendData(conn->writeBuf, conn->channel->fd);
+        if (n > 0)
+        {
+            // å†™å‡ºäº†æ•°æ®ï¼Œç»§ç»­å¾ªçŽ¯
+            continue;
+        }
+        else if (n == 0)
+        {
+            // EAGAINï¼Œéœ€è¦ç­‰å¾…ä¸‹ä¸€æ¬¡ EPOLLOUT
+            if (!isWriteEventEnable(conn->channel))
+            {
+                writeEventEnable(conn->channel, true);
+                eventLoopAddTask(conn->evLoop, conn->channel, MODIFY);
+            }
+            return 0;
+        }
+        // n == -1ï¼Œå‘é€é”™è¯¯ï¼Œåˆ é™¤è¿žæŽ¥å³å¯
+        eventLoopAddTask(conn->evLoop, conn->channel, DELETE);
+        perror("bufferSendData");
+        return -1;
+    }
+
+    // 2) writeBuf å·²ç©ºï¼Œè‹¥ response æŒ‡ç¤ºæœ‰æ–‡ä»¶éœ€è¦é€šè¿‡ sendfile å‘é€ï¼Œç»§ç»­ä½¿ç”¨ sendfile
+    if (conn->response && conn->response->fileFd >= 0)
+    {
+        // å‘é€å‰©ä½™çš„æ–‡ä»¶æ•°æ®ï¼ˆå¤„ç† range/fileLengthï¼‰
+        off_t *offset = &conn->response->fileOffset;
+        int to_send_once = 65536; // æ¯æ¬¡å°è¯•çš„æœ€å¤§å­—èŠ‚æ•°
+        // å¦‚æžœ fileLength æœ‰æŒ‡å®šï¼Œè®¡ç®— remaining
+        off_t remaining = conn->response->fileLength > 0 ? (off_t)conn->response->fileLength - *offset : -1;
+        while (remaining != 0)
+        {
+            size_t chunk = to_send_once;
+            if (remaining > 0 && remaining < (off_t)chunk)
+            {
+                chunk = (size_t)remaining;
+            }
+            ssize_t sent = sendfile(conn->channel->fd, conn->response->fileFd, offset, chunk);
+            if (sent > 0)
+            {
+                if (remaining > 0)
+                {
+                    remaining -= sent;
+                }
+                continue;
+            }
+            if (sent == 0)
+            {
+                // å½“æ²¡æœ‰å¯å‘é€çš„æ•°æ®æ—¶ï¼Œè§†ä½œ EAGAIN
+                if (!isWriteEventEnable(conn->channel))
+                {
+                    writeEventEnable(conn->channel, true);
+                    eventLoopAddTask(conn->evLoop, conn->channel, MODIFY);
+                }
+                return 0;
+            }
+            // sent < 0ï¼Œè¦ä¹ˆæ˜¯å‡ºé”™äº†ï¼Œè¦ä¹ˆæ˜¯ EAGAIN
+            if (sent == -1 && (errno == EAGAIN || errno == EWOULDBLOCK))
+            {
+                if (!isWriteEventEnable(conn->channel))
+                {
+                    writeEventEnable(conn->channel, true);
+                    eventLoopAddTask(conn->evLoop, conn->channel, MODIFY);
+                }
+                return 0;
+            }
+            else
+            {
+                // å‡ºçŽ°é”™è¯¯ï¼Œå…³é—­è¿žæŽ¥
+                perror("sendfile");
                 eventLoopAddTask(conn->evLoop, conn->channel, DELETE);
                 return -1;
             }
+        }
+        // å‘é€å®Œæ¯•ï¼šå…³é—­æ–‡ä»¶æè¿°ç¬¦å¹¶æ ‡è®°ä¸ºå·²å®Œæˆ
+        close(conn->response->fileFd);
+        conn->response->fileFd = 0;
+        conn->response->fileOffset = 0;
+        conn->response->fileLength = 0;
     }
-#ifndef MSG_SEND_AUTO
-    if (!conn->isWebSocket)
+
+    // 3) æ‰€æœ‰è¦å‘é€çš„å†…å®¹éƒ½å·²å®Œæˆï¼šå–æ¶ˆå†™äº‹ä»¶å¹¶æ ¹æ®ç±»åž‹å†³å®šæ˜¯å¦åˆ é™¤è¿žæŽ¥
+    if(isWriteEventEnable(conn->channel))
     {
-        // Èç¹ûÊÇÒ»¸ö HTTP Á¬½Ó£¬ÄÇÃ´ÎÞÂÛ´¦Àí³É¹¦Óë·ñ£¬¶¼ÒªÓë¿Í»§¶Ë¶Ï¿ªÁ¬½Ó
-        // °ÑÉ¾³ý¶ÔÓ¦ÎÄ¼þÃèÊö·ûµÄÊÂ¼þµÄÈÎÎñ½»¸øÈÎÎñ¶ÓÁÐ£¬µÈ´ýÏß³Ì´¦Àí
+        writeEventEnable(conn->channel, false);
+        eventLoopAddTask(conn->evLoop, conn->channel, MODIFY);
+    }
+
+    // 4) å¦‚æžœä¸æ˜¯ WebSocket è¿žæŽ¥ï¼Œå°±ç›´æŽ¥æ–­è¿žå³å¯
+    if(!conn->isWebSocket)
+    {
         eventLoopAddTask(conn->evLoop, conn->channel, DELETE);
     }
-#endif
     return 0;
 }
 
-static int processWrite(void* arg)
+struct TcpConnection *tcpConnectionInit(int fd, struct EventLoop *evLoop)
 {
-    Debug("¿ªÊ¼·¢ËÍÊý¾ÝµÄÁË(»ùÓÚÐ´ÊÂ¼þ·¢ËÍ)..."); 
-    struct TcpConnection* conn = (struct TcpConnection*)arg;
-    // ·¢ËÍÊý¾Ý
-    printf("Process Write on fd %d\n", conn->channel->fd);
-    int count = bufferSendData(conn->writeBuf, conn->channel->fd);
-    if (count > 0)
-    {
-        // ·¢ËÍÁËÒ»²¿·ÖÊý¾Ý
-        // ÅÐ¶ÏÊý¾ÝÊÇ·ñ±»È«²¿·¢ËÍ³öÈ¥ÁË
-        // Èç¹û±»È«²¿·¢ËÍ³öÈ¥ÁË
-        if (bufferReadableSize(conn->writeBuf) == 0)
-        {
-            // Èç¹û²»ÊÇ WebSocket Á¬½Ó£¨ÄÇ¾ÍÊÇ HTTP Á¬½Ó£©£¬ÄÇÃ´¾Í¿ÉÒÔ¹Ø±ÕÁ¬½ÓÁË
-            if (!conn->isWebSocket)
-            {
-                // ·¢ËÍÍê³ÉÁË
-                // 1. ²»ÔÙÐèÒª¼ì²âÕâ¸ö fd µÄÐ´ÊÂ¼þ -- ÐÞ¸Ä channel ÖÐ±£´æµÄÊÂ¼þ
-                writeEventEnable(conn->channel, false);
-                // 2. ÐÞ¸Ä dispatcher µÄ¼ì²â¼¯ºÏ -- Ìí¼ÓÐÂÈÎÎñµ½ÈÎÎñ¶ÓÁÐÖÐ
-                eventLoopAddTask(conn->evLoop, conn->channel, MODIFY);
-                // 3. ¿ÉÒÔ¿¼ÂÇÉ¾³ý¼ì²â½Úµã
-                eventLoopAddTask(conn->evLoop, conn->channel, DELETE);
-            }
-            // ·´Ö®£¬Èç¹ûÊÇ WebSocket Á¬½Ó£¬ÄÇÃ´¾Í²»ÐèÒª¹Ø±ÕÁ¬½Ó
-            else
-            {
-                // ·¢ËÍÍê³ÉÁË£¬¼ÌÐøµÈ´ý¿Í»§¶Ë·¢ËÍÊý¾Ý
-                // Ö»ÐèÒªÐÞ¸Ä Channel ÖÐµÄÊÂ¼þ£¬ÔÝÊ±¹Ø±Õ¼ì²âÐ´ÊÂ¼þ
-                writeEventEnable(conn->channel, false);
-                // Ìí¼Óµ½ÈÎÎñ¶ÓÁÐÖÐ£¬µÈ´ý¹¤×÷Ïß³Ì´¦Àí
-                eventLoopAddTask(conn->evLoop, conn->channel, MODIFY);
-            }
-        }
-    }
-    return 0;
-}
-
-struct TcpConnection* tcpConnectionInit(int fd, struct EventLoop* evLoop)
-{
-    struct TcpConnection* conn = (struct TcpConnection*)malloc(sizeof(struct TcpConnection));
+    struct TcpConnection *conn = (struct TcpConnection *)malloc(sizeof(struct TcpConnection));
     conn->evLoop = evLoop;
     conn->readBuf = bufferInit(10240);
     conn->writeBuf = bufferInit(10240);
@@ -151,22 +292,21 @@ struct TcpConnection* tcpConnectionInit(int fd, struct EventLoop* evLoop)
     conn->response = httpResponseInit();
     sprintf(conn->name, "Connection-%d", fd);
     conn->channel = channelInit(fd, ReadEvent, processRead, processWrite, tcpConnectionDestroy, conn);
-    // Ä¬ÈÏ²»ÊÇ WebSocket Á¬½Ó
+    // Ä¬ï¿½Ï²ï¿½ï¿½ï¿½ WebSocket ï¿½ï¿½ï¿½ï¿½
     conn->isWebSocket = false;
-    // °Ñ³õÊ¼»¯³öÀ´µÄ Channel ¶ÔÓ¦µÄÎÄ¼þÃèÊö·ûÌí¼Óµ½ÈÎÎñ¶ÓÁÐÖÐ
+    // ï¿½Ñ³ï¿½Ê¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ Channel ï¿½ï¿½Ó¦ï¿½ï¿½ï¿½Ä¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Óµï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
     eventLoopAddTask(evLoop, conn->channel, ADD);
-    Debug("ºÍ¿Í»§¶Ë½¨Á¢Á¬½Ó£¬threadName: %s, threadID:%s, connName: %s", evLoop->threadName, evLoop->threadID, conn->name);
+    Debug("ï¿½Í¿Í»ï¿½ï¿½Ë½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ó£ï¿½threadName: %s, threadID:%s, connName: %s", evLoop->threadName, evLoop->threadID, conn->name);
 
     return conn;
 }
 
-int tcpConnectionDestroy(void* arg)
+int tcpConnectionDestroy(void *arg)
 {
-    struct TcpConnection* conn = (struct TcpConnection*)arg;
+    struct TcpConnection *conn = (struct TcpConnection *)arg;
     if (conn)
     {
-        if (conn->readBuf && bufferReadableSize(conn->readBuf) == 0 
-            && conn->writeBuf && bufferReadableSize(conn->writeBuf) == 0)
+        if (conn->readBuf && bufferReadableSize(conn->readBuf) == 0 && conn->writeBuf && bufferReadableSize(conn->writeBuf) == 0)
         {
             destroyChannel(conn->evLoop, conn->channel);
             bufferDestroy(conn->readBuf);
@@ -176,6 +316,6 @@ int tcpConnectionDestroy(void* arg)
             free(conn);
         }
     }
-    Debug("Á¬½Ó¶Ï¿ª£¬ÊÍ·Å×ÊÔ´£¬gameover£¬connName: %s", conn->name);
+    Debug("ï¿½ï¿½ï¿½Ó¶Ï¿ï¿½ï¿½ï¿½ï¿½Í·ï¿½ï¿½ï¿½Ô´ï¿½ï¿½gameoverï¿½ï¿½connName: %s", conn->name);
     return 0;
 }

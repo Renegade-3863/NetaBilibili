@@ -17,10 +17,10 @@ struct TcpConnection
     char name[32];
     struct HttpRequest* request;
     struct HttpResponse* response;
-    bool isWebSocket; // 是否为 WebSocket 连接
+    bool isWebSocket; // 锟角凤拷为 WebSocket 锟斤拷锟斤拷
 };
 
-// 初始化 TcpConnection
+// 锟斤拷始锟斤拷 TcpConnection
 struct TcpConnection* tcpConnectionInit(int fd, struct EventLoop* evLoop);
-// 释放必要资源
+// 锟酵放憋拷要锟斤拷源
 int tcpConnectionDestroy(void* arg);

@@ -17,4 +17,6 @@ WORKDIR /app
 # 核心步骤：把本地的代码复制到容器中，用于后续在对应环境下的编译和运行
 COPY . /app
 
-RUN mkdir build && cd build && cmake .. && make
+# 安装 inotify-tools
+RUN apt-get update && apt-get install -y inotify-tools
+RUN mkdir -p build && cd build && cmake .. && make

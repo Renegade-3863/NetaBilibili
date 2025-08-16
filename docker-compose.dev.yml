@@ -1,0 +1,40 @@
+version: '3.8'
+services:
+# 前端服务模块
+  frontend:
+    # 前端使用官方的 Node 环境，升级到与 Vite 兼容的 Node 版本
+    # Vite plugin requires node ^20.19.0 || >=22.12.0
+    image: node:20.19.0
+    working_dir: /app
+    volumes:
+      - ./frontend:/app:cached
+      - /app/node_modules
+    # 把容器内的 5173 端口映射到宿主机的 5173 端口
+    ports:
+      - "5173:5173"
+    # CHOKIDAR_USEPOLLING 功能，用于解决宿主 -> 容器文件事件丢失/未转发的问题
+    # 改用主动轮询，而不是事件触发，可以确保检测到数据改动
+    # CHOKIDAR 是一个文件监视库，来自 Node.js
+    environment:
+      CHOKIDAR_USEPOLLING: "true"
+    command: /bin/sh -lc "npm install --no-audit --no-fund && npm run dev -- --host 0.0.0.0"
+
+# 后端服务模块
+  backend:
+    build:
+      # 指定构建环境为所在目录下的 ReactorHttp 文件夹
+      context: ./ReactorHttp
+      # 使用上面 context 下的 dockerfile 进行构建
+      dockerfile: dockerfile
+    volumes:
+      - ./ReactorHttp:/app:delegated
+      # 如果你希望把前端 build dist 挂到后端静态目录进行集成测试：
+      # 将前端目录下的构建项 dist 挂载到后端的某个静态目录进行测试
+      - ./frontend/dist:/app/test:ro
+    environment:
+      PORT: "8080"
+    ports:
+      - "8080:8080"
+    # 后端容器启动时执行 watch 脚本，上面的配置中已经设定好了相关的环                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               境变量，例如 $PORT
+    command: /bin/sh -c "/app/dev/watch_build_restart.sh"
+    # 如果镜像不包含 inotifytools，请在 Dockerfile 中安装 inotify-tools 或使用 host-side watch (下面有替代方法)

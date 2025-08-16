@@ -9,6 +9,9 @@
 #include <strings.h>
 #include <errno.h>
 
+// æœ€å¤§ç¼“å†²åŒºä¸Šé™ï¼Œé˜²æ­¢å†…å­˜è¢«æ— é™åˆ¶æ‰©å±•ï¼ˆå¯æ ¹æ®éœ€è¦è°ƒæ•´ï¼‰
+#define MAX_BUFFER_CAPACITY (100 * 1024 * 1024) // 100MB
+
 struct Buffer* bufferInit(int size)
 {
     struct Buffer* buffer = (struct Buffer*)malloc(sizeof(struct Buffer));
@@ -17,7 +20,7 @@ struct Buffer* bufferInit(int size)
         buffer->data = (char*)malloc(sizeof(char) * size);
         buffer->capacity = size;
         buffer->readPos = buffer->writePos = 0;
-        // ÄÚ´æ³õÊ¼»¯
+        // ï¿½Ú´ï¿½ï¿½Ê¼ï¿½ï¿½
         memset(buffer->data, 0, size);
     }
     return buffer;
@@ -38,35 +41,35 @@ void bufferDestroy(struct Buffer* buf)
 
 void bufferExtendRoom(struct Buffer* buffer, int size)
 {
-    // 1. ÄÚ´æ×ã¹»ÓÃ - ²»ĞèÒªÀ©Èİ
+    // 1. ï¿½Ú´ï¿½ï¿½ã¹»ï¿½ï¿½ - ï¿½ï¿½ï¿½ï¿½Òªï¿½ï¿½ï¿½ï¿½
     if (bufferWriteableSize(buffer) >= size)
     {
         return;
     }
-    // 2. ÄÚ´æ¹»ÓÃ£¬µ«ÊÇĞèÒªºÏ²¢ - Ò²²»ĞèÒªÀ©Èİ
-    // Ê£ÓàµÄ¿ÉĞ´ÄÚ´æ + ÒÑ¶ÁµÄÄÚ´æ > size
+    // 2. ï¿½Ú´æ¹»ï¿½Ã£ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Òªï¿½Ï²ï¿½ - Ò²ï¿½ï¿½ï¿½ï¿½Òªï¿½ï¿½ï¿½ï¿½
+    // Ê£ï¿½ï¿½Ä¿ï¿½Ğ´ï¿½Ú´ï¿½ + ï¿½Ñ¶ï¿½ï¿½ï¿½ï¿½Ú´ï¿½ > size
     else if (buffer->readPos + bufferWriteableSize(buffer) > size)
     {
-        // °ÑÎ´¶ÁµÄ×Ö½Ú¿éÒÆ¶¯µ½ buffer µÄ¿ªÍ·£¨Ò²¾ÍÊÇ data µÄµØÖ·ÉÏ£©
-        // »ñÈ¡Î´¶ÁµÄÄÚ´æ´óĞ¡
+        // ï¿½ï¿½Î´ï¿½ï¿½ï¿½ï¿½ï¿½Ö½Ú¿ï¿½ï¿½Æ¶ï¿½ï¿½ï¿½ buffer ï¿½Ä¿ï¿½Í·ï¿½ï¿½Ò²ï¿½ï¿½ï¿½ï¿½ data ï¿½Äµï¿½Ö·ï¿½Ï£ï¿½
+        // ï¿½ï¿½È¡Î´ï¿½ï¿½ï¿½ï¿½ï¿½Ú´ï¿½ï¿½Ğ¡
         int readable = bufferReadableSize(buffer);
-        // ÒÆ¶¯ÄÚ´æ
+        // ï¿½Æ¶ï¿½ï¿½Ú´ï¿½
         memcpy(buffer->data, buffer->data+buffer->readPos, readable);
-        // ¸üĞÂ readPos ºÍ writePos
+        // ï¿½ï¿½ï¿½ï¿½ readPos ï¿½ï¿½ writePos
         buffer->readPos = 0;
         buffer->writePos = readable;
     }
-    // 3. ÄÚ´æ²»¹»ÓÃ£¨ºÏ²¢Ò²²»¹»£©- ĞèÒªÀ©Èİ
+    // 3. ï¿½Ú´æ²»ï¿½ï¿½ï¿½Ã£ï¿½ï¿½Ï²ï¿½Ò²ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½- ï¿½ï¿½Òªï¿½ï¿½ï¿½ï¿½
     else
     {
         printf("Buffer extend room: %d bytes\n", size);
         void* temp = realloc(buffer->data, buffer->capacity + size);
         if (!temp)
         {
-            return; // ·ÖÅäÄÚ´æÊ§°Ü
+            return; // ï¿½ï¿½ï¿½ï¿½ï¿½Ú´ï¿½Ê§ï¿½ï¿½
         }
         memset(temp + buffer->capacity, 0, size);
-        // ¸üĞÂÊı¾İ³ÉÔ±
+        // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½İ³ï¿½Ô±
         buffer->data = temp;
         buffer->capacity += size;
     }
@@ -84,14 +87,19 @@ int bufferReadableSize(struct Buffer* buffer)
 
 int bufferAppendData(struct Buffer* buffer, const char* data, int size)
 {
-    if (!buffer || !data || data <= 0)
+    if (!buffer || !data || size <= 0)
     {
-        // ÎŞ·¨Ğ´Èë£¬·µ»Ø -1
         return -1;
     }
-    // ÅĞ¶ÏÊÇ·ñĞèÒªÀ©Èİ£¬Èç¹ûÓĞĞèÒª£¬Õâ¸öº¯Êı¾Í½øĞĞÀ©Èİ
+    // ï¿½Ğ¶ï¿½ï¿½Ç·ï¿½ï¿½ï¿½Òªï¿½ï¿½ï¿½İ£ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Òªï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Í½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
     bufferExtendRoom(buffer, size);
-    // ½øĞĞÊı¾İµÄ¿½±´
+    int writeable = bufferWriteableSize(buffer);
+    if (writeable < size)
+    {
+        // æ‰©å®¹å¤±è´¥æˆ–è¶…è¿‡ä¸Šé™
+        printf("bufferAppendData: not enough space, need=%d, have=%d\n", size, writeable);
+        return -1;
+    }
     memcpy(buffer->data + buffer->writePos, data, size);
     buffer->writePos += size;
     return 0;
@@ -109,31 +117,41 @@ int bufferSocketRead(struct Buffer* buffer, int fd)
     // read/recv/readv
     struct iovec vec[2];
     int writeable = bufferWriteableSize(buffer);
-    // ³õÊ¼»¯Êı×éÔªËØ
+    // ï¿½ï¿½Ê¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ôªï¿½ï¿½
     vec[0].iov_base = buffer->data + buffer->writePos;
     vec[0].iov_len = writeable;
-    // malloc ³öÀ´µÄÄÚ´æ£¬±ğÍüÁËÓÃÍêºóÊÍ·Å
+    // malloc ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ú´æ£¬ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Í·ï¿½
     char* tmpbuf = (char*)malloc(40960);
     vec[1].iov_base = tmpbuf;
     vec[1].iov_len = 40960;
-    // result ·µ»ØÖµ´ú±íÒ»¹²½ÓÊÕµ½ÁË¶àÉÙ×Ö½Ú£¬µÈÓÚ -1 ËµÃ÷µ÷ÓÃº¯ÊıÊ§°Ü
+    // result ï¿½ï¿½ï¿½ï¿½Öµï¿½ï¿½ï¿½ï¿½Ò»ï¿½ï¿½ï¿½ï¿½ï¿½Õµï¿½ï¿½Ë¶ï¿½ï¿½ï¿½ï¿½Ö½Ú£ï¿½ï¿½ï¿½ï¿½ï¿½ -1 Ëµï¿½ï¿½ï¿½ï¿½ï¿½Ãºï¿½ï¿½ï¿½Ê§ï¿½ï¿½
     int result = readv(fd, vec, 2);
-    printf("Read %d bytes from fd %d\n", result, fd);
     if (result == -1)
     {
+        if (errno == EAGAIN || errno == EWOULDBLOCK)
+        {
+            return 0;
+        }
+        // å¦‚æœéƒ½ä¸æ˜¯ï¼Œé‚£ä¹ˆå¤§æ¦‚ç‡è¿æ¥å·²ç»æ–­å¼€ï¼Œæˆ‘ä»¬è¿”å› -2 ç»™è°ƒç”¨è€…ï¼Œç”¨äºåç»­å¤„ç†
+        perror("readv");
         return -1;
     }
     else if (result <= writeable)
     {
-        // È«²¿Ğ´Èëµ½ÁË vec[0] ÖĞ£¬Ò²¾ÍÊÇ buffer ÖĞ
+        // È«ï¿½ï¿½Ğ´ï¿½ëµ½ï¿½ï¿½ vec[0] ï¿½Ğ£ï¿½Ò²ï¿½ï¿½ï¿½ï¿½ buffer ï¿½ï¿½
         buffer->writePos += result;
     }
     else
     {
-        // ±ğÍüÁË¸üĞÂ buffer->writePos
+        // ï¿½ï¿½ï¿½ï¿½ï¿½Ë¸ï¿½ï¿½ï¿½ buffer->writePos
         buffer->writePos = buffer->capacity;
-        // ·ñÔò£¬ÓĞĞ©Êı¾İĞ´µ½ÁË vec[1] ÖĞ£¬Ò²¾ÍÊÇ¶îÍâÉêÇëµÄÄÚ´æÖĞ£¬ĞèÒªÒÆ¶¯µ½ buffer ÖĞ
-        bufferAppendData(buffer, tmpbuf, result - writeable);
+        // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ğ©ï¿½ï¿½ï¿½ï¿½Ğ´ï¿½ï¿½ï¿½ï¿½ vec[1] ï¿½Ğ£ï¿½Ò²ï¿½ï¿½ï¿½Ç¶ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ú´ï¿½ï¿½Ğ£ï¿½ï¿½ï¿½Òªï¿½Æ¶ï¿½ï¿½ï¿½ buffer ï¿½ï¿½
+        if (bufferAppendData(buffer, tmpbuf, result - writeable) != 0)
+        {
+            // append å¤±è´¥ï¼Œè¿”å›é”™è¯¯ä»¥ä¾¿ä¸Šå±‚å¤„ç†å›å‹
+            free(tmpbuf);
+            return -1;
+        }
     }
     free(tmpbuf);
     tmpbuf = NULL;
@@ -142,28 +160,49 @@ int bufferSocketRead(struct Buffer* buffer, int fd)
 
 char* bufferFindCRLF(struct Buffer* buffer)
 {
-    // strstr --> ´ÓÒ»¸ö´ó×Ö·û´®ÖĞÆ¥ÅäÒ»¸ö×Ó×Ö·û´®£¨Óöµ½ \0 ¾Í½áÊøÁË£©
-    // memmem --> ´ÓÒ»¸ö´óÊı¾İ¿éÖĞÆ¥ÅäÒ»¸ö×ÓÊı¾İ¿é£¨ĞèÒªÖ¸¶¨Êı¾İ¿éµÄ´óĞ¡£©
+    // strstr --> ï¿½ï¿½Ò»ï¿½ï¿½ï¿½ï¿½ï¿½Ö·ï¿½ï¿½ï¿½ï¿½ï¿½Æ¥ï¿½ï¿½Ò»ï¿½ï¿½ï¿½ï¿½ï¿½Ö·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ \0 ï¿½Í½ï¿½ï¿½ï¿½ï¿½Ë£ï¿½
+    // memmem --> ï¿½ï¿½Ò»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½İ¿ï¿½ï¿½ï¿½Æ¥ï¿½ï¿½Ò»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½İ¿é£¨ï¿½ï¿½ÒªÖ¸ï¿½ï¿½ï¿½ï¿½ï¿½İ¿ï¿½Ä´ï¿½Ğ¡ï¿½ï¿½
     char* ptr = memmem(buffer->data + buffer->readPos, bufferReadableSize(buffer), "\r\n", 2);
     return ptr;
 }
 
 int bufferSendData(struct Buffer* buffer, int socket)
 {
-    // ÅĞ¶Ï buffer ÖĞÓĞÎŞÊı¾İ£¬ÎŞÊı¾İÔò²»ÓÃ·¢ËÍ
+    // ï¿½Ğ¶ï¿½ buffer ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½İ£ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ã·ï¿½ï¿½ï¿½
     int readable = bufferReadableSize(buffer);
     if (readable > 0)
     {
         //printf("Sending %d bytes data to socket %d\n", readable, socket);
         //printf("The thread that is sending data is %ld\n", pthread_self());
         int count = send(socket, buffer->data + buffer->readPos, readable, MSG_NOSIGNAL);
-        //printf("Send Successful\n");
         if (count > 0)
         {
             buffer->readPos += count;
+            // è‹¥å·²è¯»ç©ºï¼Œé‡ç½®æŒ‡é’ˆ
+            if (buffer->readPos >= buffer->writePos)
+            {
+                buffer->readPos = buffer->writePos = 0;
+            }
+            else if (buffer->readPos > buffer->capacity / 2)
+            {
+                int remain = buffer->writePos - buffer->readPos;
+                memmove(buffer->data, buffer->data + buffer->readPos, remain);
+                buffer->readPos = 0;
+                buffer->writePos = remain;
+            }
             usleep(1);
+            return count;
         }
-        return count;
+        else if (count == -1)
+        {
+            if (errno == EAGAIN || errno == EWOULDBLOCK)
+            {
+                return 0;
+            }
+            perror("send");
+            return -1;
+        }
+        return 0;
     }
     return 0;
 }

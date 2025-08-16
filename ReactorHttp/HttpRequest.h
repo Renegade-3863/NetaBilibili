@@ -1,66 +1,81 @@
 #pragma once
 #include <stdbool.h>
+#include <sys/types.h>
 #include "Buffer.h"
 #include "HttpResponse.h"
 #include "TcpConnection.h"
 
-// ÇëÇóÍ·¼üÖµ¶Ô
+// ï¿½ï¿½ï¿½ï¿½Í·ï¿½ï¿½Öµï¿½ï¿½
 struct RequestHeader
 {
     char* key;
     char* value;
 };
 
-// µ±Ç°µÄ½âÎö×´Ì¬
-enum HttpRequestState
+// ï¿½ï¿½Ç°ï¿½Ä½ï¿½ï¿½ï¿½×´Ì¬
+// enum HttpRequestState
+// {
+//     // ï¿½Ú½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+//     ParseReqLine,
+//     // ï¿½Ú½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Í·
+//     ParseReqHeaders,
+//     // ï¿½ï¿½ï¿½ï¿½ï¿½ Get ï¿½ï¿½ï¿½ó£¬²ï¿½ï¿½ï¿½ï¿½Ğ½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½×´Ì¬
+//     ParseReqBody,
+//     ParseReqDone
+// };
+
+typedef enum { PARSE_OK = 0, PARSE_INCOMPLETE = 1,  PARSE_ERROR = 2 } ParseResult;
+typedef enum { PS_REQLINE, PS_HEADERS, PS_BODY, PS_CHUNK_SIZE, PS_CHUNK_BODY, PS_COMPLETE } ParseState;
+
+// ä¿å­˜ Http è§£æçš„ä¸Šä¸‹æ–‡
+struct HttpParseCtx
 {
-    // ÔÚ½âÎöÇëÇóĞĞ
-    ParseReqLine,
-    // ÔÚ½âÎöÇëÇóÍ·
-    ParseReqHeaders,
-    // Èç¹ûÊÇ Get ÇëÇó£¬²»»áÓĞ½âÎöÇëÇóÌåµÄ×´Ì¬
-    ParseReqBody,
-    ParseReqDone
+    ParseState state;
+    ssize_t content_length;         // å¦‚æœä¸º -1ï¼Œä»£è¡¨ Http è¯·æ±‚çš„é•¿åº¦æœªçŸ¥
+    ssize_t body_read;              // å·²è¯»çš„ body é•¿åº¦
+    ssize_t chunk_size;             // å½“å‰å¾…è¯»å–çš„ chunk å¤§å°
+    bool chunk_final;               // å½“å‰ chunk æ˜¯å¦ä¸ºæœ€åä¸€ä¸ª chunk
+    bool keep_alive;                // æ˜¯å¦ä¸ºé•¿è¿æ¥
 };
 
-// ¶¨Òå Http ÇëÇó½á¹¹Ìå
+// ï¿½ï¿½ï¿½ï¿½ Http ï¿½ï¿½ï¿½ï¿½á¹¹ï¿½ï¿½
 struct HttpRequest
 {
-    // ÇëÇó·½·¨£¨GET/POST£©
+    // ï¿½ï¿½ï¿½ó·½·ï¿½ï¿½ï¿½GET/POSTï¿½ï¿½
     char* method;
-    // ÇëÇóµÄÍ³Ò»×ÊÔ´¶¨Î»·û
+    // ï¿½ï¿½ï¿½ï¿½ï¿½Í³Ò»ï¿½ï¿½Ô´ï¿½ï¿½Î»ï¿½ï¿½
     char* url;
-    // HTTP °æ±¾ºÅ
+    // HTTP ï¿½æ±¾ï¿½ï¿½
     char* version;
     struct RequestHeader* reqHeaders;
     int reqHeadersNum;
-    enum HttpRequestState curState;
+    ParseState curState;
 };
 
-// ³õÊ¼»¯Ò»¸ö HttpRequest
+// ï¿½ï¿½Ê¼ï¿½ï¿½Ò»ï¿½ï¿½ HttpRequest
 struct HttpRequest* httpRequestInit();
-// ÓÃÓÚ HttpRequest ½á¹¹ÌåµÄÖØÖÃ
+// ï¿½ï¿½ï¿½ï¿½ HttpRequest ï¿½á¹¹ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 void httpRequestReset(struct HttpRequest* req);
-// Ïú»ÙÄÚ´æ
+// ï¿½ï¿½ï¿½ï¿½ï¿½Ú´ï¿½
 void httpRequestResetEx(struct HttpRequest* req);
-// ÄÚ´æÊÍ·Å
+// ï¿½Ú´ï¿½ï¿½Í·ï¿½
 void httpRequestDestroy(struct HttpRequest* req);
-// »ñÈ¡ Http ÇëÇóµÄ´¦Àí×´Ì¬
-enum HttpRequestState HttpRequestState(struct HttpRequest* request);
-// Ìí¼ÓÇëÇóÍ·
-// key ºÍ value ĞèÒªÔÚµ÷ÓÃº¯ÊıÇ°·Åµ½¶ÑÄÚ´æÉÏ
+// ï¿½ï¿½È¡ Http ï¿½ï¿½ï¿½ï¿½Ä´ï¿½ï¿½ï¿½×´Ì¬
+ParseState HttpRequestState(struct HttpRequest* request);
+// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Í·
+// key ï¿½ï¿½ value ï¿½ï¿½Òªï¿½Úµï¿½ï¿½Ãºï¿½ï¿½ï¿½Ç°ï¿½Åµï¿½ï¿½ï¿½ï¿½Ú´ï¿½ï¿½ï¿½
 void httpRequestAddHeader(struct HttpRequest* request, const char* key, const char* value);
-// ¸ù¾İ key µÃµ½ÇëÇóÍ·µÄ value
+// ï¿½ï¿½ï¿½ï¿½ key ï¿½Ãµï¿½ï¿½ï¿½ï¿½ï¿½Í·ï¿½ï¿½ value
 char* httpRequestGetHeader(struct HttpRequest* request, const char* key);
-// ½âÎöÇëÇóĞĞ
+// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 bool parseHttpRequestLine(struct HttpRequest* request, struct Buffer* readBuf);
-// ½âÎöÇëÇóÍ·
-// ¸Ãº¯ÊıÒ»´Îµ÷ÓÃ£¬Ö»´¦ÀíÇëÇóÍ·ÖĞµÄÒ»ĞĞ
+// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Í·
+// ï¿½Ãºï¿½ï¿½ï¿½Ò»ï¿½Îµï¿½ï¿½Ã£ï¿½Ö»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Í·ï¿½Ğµï¿½Ò»ï¿½ï¿½
 bool parseHttpRequestHeader(struct HttpRequest* request, struct Buffer* readBuf);
-// ½âÎö Http »ò WebSocket ÇëÇóĞ­Òé
-bool parseHttpRequest(struct TcpConnection* conn, struct HttpRequest* request, struct Buffer* readBuf, struct HttpResponse* response, struct Buffer* sendBuf, int socket);
-// ´¦Àí Http »ò WebSocket ÇëÇóĞ­Òé
+// ï¿½ï¿½ï¿½ï¿½ Http ï¿½ï¿½ WebSocket ï¿½ï¿½ï¿½ï¿½Ğ­ï¿½ï¿½
+ParseResult parseHttpRequest(struct TcpConnection* conn, struct HttpRequest* request, struct Buffer* readBuf, struct HttpResponse* response, struct Buffer* sendBuf, int socket);
+// ï¿½ï¿½ï¿½ï¿½ Http ï¿½ï¿½ WebSocket ï¿½ï¿½ï¿½ï¿½Ğ­ï¿½ï¿½
 bool processHttpRequest(struct TcpConnection* conn, struct HttpRequest* request, struct HttpResponse* response);
-// ½âÂë×Ö·û´®
+// ï¿½ï¿½ï¿½ï¿½ï¿½Ö·ï¿½ï¿½ï¿½
 void decodeMsg(char* to, char* from);
 const char* getFileType(const char* name);
