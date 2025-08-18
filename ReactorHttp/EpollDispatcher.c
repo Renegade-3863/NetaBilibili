@@ -44,6 +44,11 @@ static int epollCtl(struct Channel* channel, struct EventLoop* evLoop, int op)
         events |= EPOLLOUT;
     }
     ev.events = events;
+
+    // Mark: 2025/08/17
+    // æ³¨å†Œä¸ºè¾¹ç¼˜è§¦å‘
+    ev.events = events | EPOLLET;
+
     int ret = epoll_ctl(data->epfd, op, channel->fd, &ev);
     return ret;
 }
@@ -57,7 +62,7 @@ static void* epollInit()
         perror("epoll_create");
         exit(0);
     }
-    // calloc ÔÚ·ÖÅäÄÚ´æ¿Õ¼äµÄÍ¬Ê±£¬½«·ÖÅäµ½µÄÄÚ´æ¿Õ¼ä³õÊ¼»¯ÎªÈ« 0
+    // calloc ï¿½Ú·ï¿½ï¿½ï¿½ï¿½Ú´ï¿½Õ¼ï¿½ï¿½Í¬Ê±ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½äµ½ï¿½ï¿½ï¿½Ú´ï¿½Õ¼ï¿½ï¿½Ê¼ï¿½ï¿½ÎªÈ« 0
     data->events = (struct epoll_event*)calloc(Max, sizeof(struct epoll_event));
 
     return data;
@@ -82,7 +87,7 @@ static int epollRemove(struct Channel* channel, struct EventLoop* evLoop)
         perror("epoll_ctl_del");
         exit(0);
     }
-    // Í¨¹ý channel ÊÍ·Å¶ÔÓ¦µÄ TcpConnection Á¬½Ó
+    // Í¨ï¿½ï¿½ channel ï¿½Í·Å¶ï¿½Ó¦ï¿½ï¿½ TcpConnection ï¿½ï¿½ï¿½ï¿½
     channel->destroyCallback(channel->arg);
     return ret;
 }
@@ -101,23 +106,23 @@ static int epollModify(struct Channel* channel, struct EventLoop* evLoop)
 static int epollDispatch(struct EventLoop* evLoop, int timeout)
 {
     struct EpollData* data = (struct EpollData*)evLoop->dispatcherData;
-    // epoll_wait ½ÓÊÕµÄ³¬Ê±Ê±³¤²ÎÊý£¬µ¥Î»ÎªºÁÃë£¬ËùÒÔÒªÓÃÃëÎªµ¥Î»µÄÊý¾Ý³ËÒÔ 1000
+    // epoll_wait ï¿½ï¿½ï¿½ÕµÄ³ï¿½Ê±Ê±ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Î»Îªï¿½ï¿½ï¿½ë£¬ï¿½ï¿½ï¿½ï¿½Òªï¿½ï¿½ï¿½ï¿½Îªï¿½ï¿½Î»ï¿½ï¿½ï¿½ï¿½ï¿½Ý³ï¿½ï¿½ï¿½ 1000
     int count = epoll_wait(data->epfd, data->events, Max, timeout * 1000);
     //printf("epoll_wait returned %d events\n", count);
     for (int i = 0; i < count; ++i)
     {
         int events = data->events[i].events;
         int fd = data->events[i].data.fd;
-        // EPOLLERR£º¶Ô¶ËÒÑ¾­¶Ï¿ªÁ¬½Ó
-        // EPOLLHUP£º¶Ô¶ËÒÑ¾­¶Ï¿ªÁ¬½Ó£¬µ«±¾¶Ë»¹ÔÚÏò¶Ô·½·¢ËÍÊý¾Ý
+        // EPOLLERRï¿½ï¿½ï¿½Ô¶ï¿½ï¿½Ñ¾ï¿½ï¿½Ï¿ï¿½ï¿½ï¿½ï¿½ï¿½
+        // EPOLLHUPï¿½ï¿½ï¿½Ô¶ï¿½ï¿½Ñ¾ï¿½ï¿½Ï¿ï¿½ï¿½ï¿½ï¿½Ó£ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ë»ï¿½ï¿½ï¿½ï¿½ï¿½Ô·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
         if (events & EPOLLERR || events & EPOLLHUP)
         {
-            // ¶Ô·½ÒÑ¾­¶Ï¿ªÁ¬½Ó£¬É¾³ý fd ¼´¿É
+            // ï¿½Ô·ï¿½ï¿½Ñ¾ï¿½ï¿½Ï¿ï¿½ï¿½ï¿½ï¿½Ó£ï¿½É¾ï¿½ï¿½ fd ï¿½ï¿½ï¿½ï¿½
             // epollRemove(Channel, evLoop);
             continue;
         }
-        // ÆäÓàÎªÕý³£µÄÊÂ¼þ£º¶ÁÊÂ¼þ/Ð´ÊÂ¼þ
-        // ÐèÒªµ÷ÓÃ¶ÔÓ¦µÄ»Øµ÷º¯Êý
+        // ï¿½ï¿½ï¿½ï¿½Îªï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Â¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Â¼ï¿½/Ð´ï¿½Â¼ï¿½
+        // ï¿½ï¿½Òªï¿½ï¿½ï¿½Ã¶ï¿½Ó¦ï¿½Ä»Øµï¿½ï¿½ï¿½ï¿½ï¿½
         if (events & EPOLLIN)
         {
             eventActivate(evLoop, fd, ReadEvent);

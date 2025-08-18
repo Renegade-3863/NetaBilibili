@@ -62,7 +62,7 @@ void bufferExtendRoom(struct Buffer* buffer, int size)
     // 3. �ڴ治���ã��ϲ�Ҳ������- ��Ҫ����
     else
     {
-        printf("Buffer extend room: %d bytes\n", size);
+        // printf("Buffer extend room: %d bytes\n", size);
         void* temp = realloc(buffer->data, buffer->capacity + size);
         if (!temp)
         {
@@ -130,10 +130,12 @@ int bufferSocketRead(struct Buffer* buffer, int fd)
     {
         if (errno == EAGAIN || errno == EWOULDBLOCK)
         {
+            free(tmpbuf);
             return 0;
         }
         // 如果都不是，那么大概率连接已经断开，我们返回 -2 给调用者，用于后续处理
         perror("readv");
+        free(tmpbuf);
         return -1;
     }
     else if (result <= writeable)
@@ -149,8 +151,8 @@ int bufferSocketRead(struct Buffer* buffer, int fd)
         if (bufferAppendData(buffer, tmpbuf, result - writeable) != 0)
         {
             // append 失败，返回错误以便上层处理回压
-            free(tmpbuf);
-            return -1;
+        free(tmpbuf);
+        return -1;
         }
     }
     free(tmpbuf);

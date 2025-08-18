@@ -210,6 +210,32 @@ static char *splitRequestLine(char *start, char *end, const char *sub, char **pt
  */
 ParseResult parseHttpRequest(struct TcpConnection *conn, struct HttpRequest *request, struct Buffer *readBuf, struct HttpResponse *response, struct Buffer *sendBuf, int socket)
 {
+    /* Free any previously allocated strings/headers to avoid leaks when reusing HttpRequest */
+    if (request->method)
+    {
+        free(request->method);
+        request->method = NULL;
+    }
+    if (request->url)
+    {
+        free(request->url);
+        request->url = NULL;
+    }
+    if (request->version)
+    {
+        free(request->version);
+        request->version = NULL;
+    }
+    if (request->reqHeaders)
+    {
+        for (int i = 0; i < request->reqHeadersNum; ++i)
+        {
+            free(request->reqHeaders[i].key);
+            free(request->reqHeaders[i].value);
+        }
+        request->reqHeadersNum = 0;
+    }
+
     // 快速别名？
     char *base = readBuf->data;
     int readable = bufferReadableSize(readBuf);
@@ -250,6 +276,12 @@ ParseResult parseHttpRequest(struct TcpConnection *conn, struct HttpRequest *req
     }
     // 解析 URL
     after = splitRequestLine(after, line_end, " ", &request->url);
+    // 如果后面携带了 query 部分，要剪掉
+    char *query_start = strchr(request->url, '?');
+    if (query_start)
+    {
+        *query_start = '\0';
+    }
     if (!after)
     {
         printf("parseHttpRequest: Failed to parse URL\n");
@@ -558,7 +590,7 @@ static void sendFilePartial(const char *filename, struct Buffer *sendBuf,
 {
     int fd = open(filename, O_RDONLY);
     assert(fd > 0);
-    // printf("fd: %d\n", fd);
+    printf("fd: %d\n", fd);
 
     off_t off = offset;
     int remaining = length;
@@ -747,23 +779,17 @@ void sendFile(const char *filename, struct Buffer *sendBuf, int cfd)
         return;
     }
 #if 1
-    // ʹ��һ�� while ѭ�������ϵش��ļ��ж�ȡһ�������ݲ��� TCP ���ӽ��з���
     while (1)
     {
-        char buf[1024000];
+        char buf[102400];
         int len = read(fd, buf, sizeof(buf));
         if (len > 0)
         {
-            // send(cfd, buf, len, 0);
             int rc_append = bufferAppendData(sendBuf, buf, len);
             if (rc_append != 0)
             {
-                // printf("Succefully sent file %s\n", filename);
 #ifndef MSG_SEND_AUTO
-                // дһ���֣��ͷ�һ����
                 int rc_send = bufferSendData(sendBuf, cfd);
-                // printf("Sending %d bytes data to socket %d\n", len, cfd);
-                // printf("Total size sent: %d bytes\n", totalSize);
                 if (rc_send == -1)
                 {
                     // 发生了致命错误，例如 broken pipe (EPIPE)，此时连接不再可用，我们直接关闭文件描述符即可
@@ -773,14 +799,6 @@ void sendFile(const char *filename, struct Buffer *sendBuf, int cfd)
                 }
 #endif
             }
-            // ��ֹ���Ͷ˷������ݵ�Ƶ�ʹ��죬�����˽��ն˵Ļ���
-            // ���������÷����߳�ÿ�η��ͱ���һЩ���
-            // timespec �ṹ�����ں��뼶���ʱ�����
-            // struct timespec ts = {
-            //    .tv_sec = 0,
-            //    .tv_nsec = 10 * 1000000L
-            //};
-            // nanosleep(&ts, NULL);
         }
         else if (len == 0)
         {
@@ -795,24 +813,31 @@ void sendFile(const char *filename, struct Buffer *sendBuf, int cfd)
     }
 #else
     off_t offset = 0;
+    // 获取文件大小
     int size = lseek(fd, 0, SEEK_END);
-    // ����һ�д����Ѷ�Ӧ fd �ļ��Ķ�ȡָ���Ƶ��ļ�ĩβ��������Ҫ���ļ�ָ�����ƻ���
+    // 设置一个读写指针，指向 fd 文件的开头
     lseek(fd, 0, SEEK_SET);
-    // ���ļ�û�з������ʱ���ظ����� sendfile �����������ݷ���
+    // 通过 sendfile 进行数据传输
+    // 设定一个发送限速
     while (offset < size)
     {
-        // ע�⶯̬����Ҫ���͵����ݿ�Ĵ�С�����ݺ����Լ����µ� offset ֵ�� size �����޸�
+        // 注意 sendfile 需要发送的数据块大小必须是一个完整的 offset 值和 size 之间的区间
+        // 给 sendfile 设定一个发送限速
         int ret = sendfile(cfd, fd, &offset, size - offset);
-        // if (ret == -1 && errno == EAGAIN)
-        // {
-        //     printf("û����...\n");
-        // }
+        // 因为是 ET 模式，需要注意处理 EAGAIN 和 EWOULDBLOCK
+        if (ret == -1 && (errno == EAGAIN || errno == EWOULDBLOCK))
+        {
+            printf("暂时无法发送数据...\n");
+            // 直接返回即可
+            return 0;
+        }
         if (ret == -1 && errno != EAGAIN)
         {
-            // ���Ƕ�ȡ�������򻺴���д����������֮��Ĳ�������
-            // �Ǿ��ǳ����ˣ����Ǵ�ʱ������������
+            // 发生了致命错误，关闭文件描述符并返回 -1
+            close(fd);
             return -1;
         }
+        offset += ret;
     }
 #endif
     close(fd);
@@ -993,7 +1018,7 @@ bool processHttpRequest(struct TcpConnection *conn, struct HttpRequest *request,
             int start = 0, end = 0;
             if (sscanf(rangeHeader, "bytes=%d-%d", &start, &end) >= 1)
             {
-                printf("Parsed Range: %d-%d\n", start, end);
+                // printf("Parsed Range: %d-%d\n", start, end);
 
                 // 解析成功，我们可以进一步判断
                 if (end == 0 || end >= st.st_size)
@@ -1028,13 +1053,12 @@ bool processHttpRequest(struct TcpConnection *conn, struct HttpRequest *request,
                 // 打开写事件监听
                 writeEventEnable(conn->channel, true);
                 eventLoopModify(conn->evLoop, conn->channel);
-
-                response->sendRangeDataFunc = sendRangeRequestData;
-
                 response->fileOffset = start;
                 // 对于这种较大的文件，似乎可以尝试先默认只发送 5 MB?
                 response->fileLength = contentLength;
                 response->fileFd = open(file, O_RDONLY);
+
+                response->sendRangeDataFunc = sendRangeRequestData;
 
                 return true;
             }
@@ -1042,29 +1066,32 @@ bool processHttpRequest(struct TcpConnection *conn, struct HttpRequest *request,
         // 添加必要的头
         char tmp[12] = {0};
         sprintf(tmp, "%ld", st.st_size);
-        
+
         httpResponseAddHeader(response, "Content-type", getFileType(file));
         // printf("Got contenttype: %s\n", getFileType(file));
         httpResponseAddHeader(response, "Content-length", tmp);
         // 添加一条分支：如果要发送的文件本身很大，同时是视频文件，不适合一次性读入内存并发送，就换用 sendfile 进行发送
-        if (st.st_size > 1024 * 1024 && strcmp(getFileType(file), "video/mp4") == 0)
-        {
-            // 设定 sendRangeDataFunc，告诉服务器使用范围发送，也就是 sendfile
-            response->sendRangeDataFunc = sendRangeRequestData;
+        // if (st.st_size > 1024 * 1024 && strcmp(getFileType(file), "video/mp4") == 0)
+        // {
+        //     // 设定 sendRangeDataFunc，告诉服务器使用范围发送，也就是 sendfile
+        //     response->sendRangeDataFunc = sendRangeRequestData;
 
-            // 因为请求的是完整的文件，所以起始位置为第一个字节
-            response->fileOffset = 0;
-            response->fileLength = MAX_FILE_SIZE;
-            // response->fileLength = st.st_size;
-            response->fileFd = open(file, O_RDONLY);
+        //     // 因为请求的是完整的文件，所以起始位置为第一个字节
+        //     response->fileOffset = 0;
+        //     response->fileLength = MAX_FILE_SIZE;
+        //     // response->fileLength = st.st_size;
+        //     response->fileFd = open(file, O_RDONLY);
 
-            return true;
-        }
+        //     return true;
+        // }
         // 小于 1MB 的文件，就使用 send 简单发送
         // printf("\n\n\n\n\n\nThis is a File!!\n\n\n\n\n\n");
         //  ˵����һ���ļ�
         //  ��ô���ǰ�����ļ������ݷ������ͻ���
         //  �����Ӧͷ
+        // 打开写事件监听
+        writeEventEnable(conn->channel, true);
+        eventLoopModify(conn->evLoop, conn->channel);
         response->sendDataFunc = sendFile;
     }
 

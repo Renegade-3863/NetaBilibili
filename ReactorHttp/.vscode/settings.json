@@ -1,0 +1,28 @@
+{
+    "files.associations": {
+        "numbers": "c",
+        "random": "c",
+        "numeric": "c",
+        "streambuf": "c",
+        "system_error": "c",
+        "tuple": "c",
+        "bit": "c",
+        "compare": "c",
+        "cstdint": "c",
+        "cstdlib": "c",
+        "string": "c",
+        "exception": "c",
+        "memory_resource": "c",
+        "cmath": "c",
+        "functional": "c",
+        "iostream": "c",
+        "istream": "c",
+        "new": "c",
+        "ostream": "c",
+        "string_view": "c",
+        "type_traits": "c",
+        "typeinfo": "c",
+        "limits": "c",
+        "sendfile.h": "c"
+    }
+}

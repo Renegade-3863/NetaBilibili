@@ -1,0 +1,40 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>播放器</title>
+<style>body{font-family:Arial;padding:12px}video{width:100%;max-width:900px;}</style>
+</head>
+<body>
+<h3 id="title">播放</h3>
+<video id="player" controls poster="" crossorigin="anonymous"></video>
+<div style="margin-top:8px">
+  <label>速率:
+    <select id="rate"><option>0.5</option><option>1</option><option selected>1.25</option><option>1.5</option><option>2</option></select>
+  </label>
+  <button id="resume">上次位置播放</button>
+</div>
+<script>
+function qs(name){ return new URLSearchParams(location.search).get(name); }
+const file = qs('file');
+const id = qs('id') || file;
+const player = document.getElementById('player');
+if(!file){ document.body.innerHTML='<p>未指定视频文件</p>'; throw 0; }
+player.src = file;
+player.addEventListener('loadedmetadata', ()=> {
+  document.getElementById('title').innerText = document.title = (qs('title') || '播放');
+});
+const key = 'video-pos-'+id;
+player.addEventListener('timeupdate', ()=> {
+  try{ localStorage.setItem(key, Math.floor(player.currentTime)); }catch(e){}
+});
+document.getElementById('resume').addEventListener('click', ()=>{
+  const v = localStorage.getItem(key);
+  if(v) player.currentTime = +v;
+});
+document.getElementById('rate').addEventListener('change', (e)=> player.playbackRate = +e.target.value);
+// handle seeking errors / network issues
+player.addEventListener('error', (e)=> console.error('Video error', e));
+</script>
+</body>
+</html>

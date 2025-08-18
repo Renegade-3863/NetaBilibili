@@ -78,13 +78,40 @@ void httpResponsePrepareMsg(struct TcpConnection* conn, struct HttpResponse* res
     // 同步发送头部+短体数据（非事件驱动模式）
     bufferSendData(sendBuf, socket);
 #endif
-    // Ҫ�ظ����ͻ��˵�����
-    //printf("Calling sendDataFunc at address %p\n", response->sendDataFunc);
-    // ��� sendDataFunc ��Ϊ NULL��˵����������Ҫ����
-    // ��� sendDataFunc Ϊ NULL��˵��û���ļ���Ҫ����
     if(response->sendDataFunc)
     {
-        response->sendDataFunc(response->fileName, sendBuf, socket);
+        int ret = response->sendDataFunc(response->fileName, sendBuf, socket);
+        // 根据返回值决定后续处理
+        if(ret == -2)
+        {
+            // Critical failure，需要停止监听写事件，内部已经关闭了文件描述符，外面不需要再次关闭
+            if(isWriteEventEnable(conn->channel))
+            {
+                writeEventEnable(conn->channel, false);
+                eventLoopModify(conn->evLoop, conn->channel);
+            }
+        }
+        else if(ret == -1)
+        {
+            // 常规的错误，不需要特殊处理
+            // 保证写事件被注册监听
+            if(!isWriteEventEnable(conn->channel))
+            {
+                writeEventEnable(conn->channel, true);
+                eventLoopModify(conn->evLoop, conn->channel);
+            }
+        }
+        // 否则，ret 为 0，代表写函数发送完成，我们可以清空发送函数，防止后续错误调用
+        else
+        {
+            response->sendDataFunc = NULL; // 清空发送函数指针
+            // 停止检测写事件
+            if(isWriteEventEnable(conn->channel))
+            {
+                writeEventEnable(conn->channel, false);
+                eventLoopModify(conn->evLoop, conn->channel);
+            }
+        }
         return;
     }
     // 上面的调用的是完全发送数据的函数，另外判断一下是否需要继续部分发送
@@ -95,7 +122,7 @@ void httpResponsePrepareMsg(struct TcpConnection* conn, struct HttpResponse* res
     // 发送完毕后，检查文件描述符是否需要关闭
     if(response->fileFd < 0)
     {
-        printf("File descriptor %d closed after sending\n", response->fileFd);
+        // printf("File descriptor %d closed after sending\n", response->fileFd);
 
         // 文件发送完毕，可以关闭写事件监听
         writeEventEnable(conn->channel, false);
@@ -127,7 +154,7 @@ void sendRangeRequestData(struct HttpResponse* response, struct Buffer* sendBuf,
     {
         // 一次最多发送 65536 字节
         size_t toSend = *remaining > 65536 ? 65536 : *remaining;
-        printf("Sending %ld bytes from offset %ld\n", toSend, *offset);
+        // printf("Sending %ld bytes from offset %ld\n", toSend, *offset);
 
         ssize_t sent = sendfile(socket, fd, offset, toSend);
         if(sent < 0)
@@ -140,6 +167,7 @@ void sendRangeRequestData(struct HttpResponse* response, struct Buffer* sendBuf,
             else if(errno == EAGAIN || errno == EWOULDBLOCK)
             {
                 // 非阻塞模式下没有数据可发送，退出循环，等待下一次写事件
+                // printf("暂时无法发送数据...\n");
                 break;
             }
             else
@@ -177,5 +205,13 @@ void sendRangeRequestData(struct HttpResponse* response, struct Buffer* sendBuf,
         close(fd);
         response->fileFd = -1;
     }
-
 }
+
+// 使用 sendfile 发送完整的常规文件的函数
+// static void sendFileData(struct HttpResponse* response, struct Buffer* sendBuf, int socket)
+// {
+//     int fd = response->fileFd;
+//     off_t* offset = &response->fileOffset;
+//     int* remaining = &response->fileLength;
+    
+// }

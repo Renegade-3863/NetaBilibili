@@ -21,10 +21,10 @@ static int processRead(void *arg)
         int totalLen = 0;
         while (flag = parseWebSocketFrame(conn->readBuf, &opcode, payload, &payloadLen))
         {
-            printf("flag = %d\n", flag);
-            printf("opcode = %d\n", opcode);
+            // printf("flag = %d\n", flag);
+            // printf("opcode = %d\n", opcode);
             totalLen += flag;
-            printf("totalLen = %d\n", totalLen);
+            // printf("totalLen = %d\n", totalLen);
             if (flag < 0)
             {
                 // ��� flag < 0�����������ݲ�������Ҳ�����ǽ����Ѿ����
@@ -163,29 +163,6 @@ static int processWrite(void *arg)
     // int count = bufferSendData(conn->writeBuf, conn->channel->fd);
     while (bufferReadableSize(conn->writeBuf) > 0)
     {
-        // if (bufferReadableSize(conn->writeBuf) == 0)
-        // {
-        //     // ������� WebSocket ���ӣ��Ǿ��� HTTP ���ӣ�����ô�Ϳ��Թر�������
-        //     if (!conn->isWebSocket)
-        //     {
-        //         // ���������
-        //         // 1. ������Ҫ������ fd ��д�¼� -- �޸� channel �б�����¼�
-        //         writeEventEnable(conn->channel, false);
-        //         // 2. �޸� dispatcher �ļ�⼯�� -- �������������������
-        //         eventLoopAddTask(conn->evLoop, conn->channel, MODIFY);
-        //         // 3. ���Կ���ɾ�����ڵ�
-        //         eventLoopAddTask(conn->evLoop, conn->channel, DELETE);
-        //     }
-        //     // ��֮������� WebSocket ���ӣ���ô�Ͳ���Ҫ�ر�����
-        //     else
-        //     {
-        //         // ��������ˣ������ȴ��ͻ��˷�������
-        //         // ֻ��Ҫ�޸� Channel �е��¼�����ʱ�رռ��д�¼�
-        //         writeEventEnable(conn->channel, false);
-        //         // ���ӵ���������У��ȴ������̴߳���
-        //         eventLoopAddTask(conn->evLoop, conn->channel, MODIFY);
-        //     }
-        // }
         int n = bufferSendData(conn->writeBuf, conn->channel->fd);
         if (n > 0)
         {
@@ -224,12 +201,14 @@ static int processWrite(void *arg)
                 chunk = (size_t)remaining;
             }
             ssize_t sent = sendfile(conn->channel->fd, conn->response->fileFd, offset, chunk);
+            printf("Subsequent sending\n");
             if (sent > 0)
             {
                 if (remaining > 0)
                 {
                     remaining -= sent;
                 }
+                printf("remaining: %ld\n", remaining);
                 continue;
             }
             if (sent == 0)
@@ -261,11 +240,21 @@ static int processWrite(void *arg)
             }
         }
         // 发送完毕：关闭文件描述符并标记为已完成
+        printf("closed after sending\n", conn->response->fileFd);
         close(conn->response->fileFd);
-        conn->response->fileFd = 0;
+        conn->response->fileFd = -1;
         conn->response->fileOffset = 0;
         conn->response->fileLength = 0;
     }
+    
+    // 如果先前有 sendFile 函數未发完的数据，在这里继续发
+    // if(conn->response && conn->response->sendDataFunc)
+    // {
+    //     // 再发送一次请求数据
+    //     conn->response->sendDataFunc(conn->response->fileName, conn->writeBuf, conn->channel->fd);
+    //     // 不进行后续处理，关闭写事件检测的检查再 sendDataFunc 中做
+    //     return 0;
+    // }
 
     // 3) 所有要发送的内容都已完成：取消写事件并根据类型决定是否删除连接
     if(isWriteEventEnable(conn->channel))
@@ -308,6 +297,7 @@ int tcpConnectionDestroy(void *arg)
     {
         if (conn->readBuf && bufferReadableSize(conn->readBuf) == 0 && conn->writeBuf && bufferReadableSize(conn->writeBuf) == 0)
         {
+            // printf("Connection is idle, closing: %s\n", conn->name);
             destroyChannel(conn->evLoop, conn->channel);
             bufferDestroy(conn->readBuf);
             bufferDestroy(conn->writeBuf);
@@ -316,6 +306,6 @@ int tcpConnectionDestroy(void *arg)
             free(conn);
         }
     }
-    Debug("���ӶϿ����ͷ���Դ��gameover��connName: %s", conn->name);
+    // Debug("���ӶϿ����ͷ���Դ��gameover��connName: %s", conn->name);
     return 0;
 }

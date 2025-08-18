@@ -23,7 +23,7 @@ struct ResponseHeader
 };
 
 // ����һ������ָ�룬������֯Ҫ�ظ����ͻ��˵����ݿ�
-typedef void (*responseBody)(const char* fileName, struct Buffer* sendBuf, int socket);
+typedef int (*responseBody)(const char* fileName, struct Buffer* sendBuf, int socket);
 typedef void (*responseRangeBody)(struct HttpResponse* response, struct Buffer* sendBuf, int socket);
 
 

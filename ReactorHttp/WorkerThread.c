@@ -3,7 +3,7 @@
 
 int workerThreadInit(struct WorkerThread* thread, int index)
 {
-    // ³õÊ¼»¯µÄÊ±ºò£¬¹¤×÷Ïß³Ì»¹Ã»ÓÐ·´Ó¦¶ÑÄ£ÐÍºÍÏß³Ì ID
+    // ï¿½ï¿½Ê¼ï¿½ï¿½ï¿½ï¿½Ê±ï¿½ò£¬¹ï¿½ï¿½ï¿½ï¿½ß³Ì»ï¿½Ã»ï¿½Ð·ï¿½Ó¦ï¿½ï¿½Ä£ï¿½Íºï¿½ï¿½ß³ï¿½ ID
     thread->evLoop = NULL;
     thread->threadID = 0;
     sprintf(thread->name, "SubThread-%d", index);
@@ -12,14 +12,13 @@ int workerThreadInit(struct WorkerThread* thread, int index)
     return 0;
 }
 
-// ×ÓÏß³ÌµÄ»Øµ÷º¯Êý
+// ï¿½ï¿½ï¿½ß³ÌµÄ»Øµï¿½ï¿½ï¿½ï¿½ï¿½
 static void* subThreadRunning(void* arg)
 {
     struct WorkerThread* thread = (struct WorkerThread*)arg;
     pthread_mutex_lock(&thread->mutex);
     thread->evLoop = eventLoopInitEx(thread->name);
     pthread_mutex_unlock(&thread->mutex);
-    // Ê¹ÓÃÌõ¼þ±äÁ¿»½ÐÑÖ÷Ïß³Ì£¬ÈÃÖ÷Ïß³ÌÄÜ¼ÌÐøÖ´ÐÐ
     pthread_cond_signal(&thread->cond);
     eventLoopRun(thread->evLoop);
     return NULL;
@@ -27,17 +26,17 @@ static void* subThreadRunning(void* arg)
 
 void workerThreadRun(struct WorkerThread* thread)
 {
-    // ´´½¨×ÓÏß³Ì
+    // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ß³ï¿½
     pthread_create(&thread->threadID, NULL, subThreadRunning, thread);
-    // pthread_create ´´½¨Íê³É×ÓÏß³Ìºó£¬subThreadRunning ²¢²»Ò»¶¨Ö´ÐÐÍê³É
-    // ¿ÉÄÜ»á³öÏÖ£º
-    // evLoop ÔÚ subThreadRunning »¹Î´³õÊ¼»¯Íê³É£¬Ö÷Ïß³Ì¾Í³¢ÊÔÍùÒ»¸ö²»´æÔÚµÄ evLoop ¶ÔÏóÖÐÌí¼ÓÈÎÎñ
-    // ½â¾ö·½°¸£º
-    // Ê¹ÓÃÌõ¼þ±äÁ¿£¬ÈÃÖ÷Ïß³Ì×èÈûÒ»»á£¬²»ÒªÈÃµ±Ç°º¯ÊýÖ±½Ó½áÊø
+    // pthread_create ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ß³Ìºï¿½subThreadRunning ï¿½ï¿½ï¿½ï¿½Ò»ï¿½ï¿½Ö´ï¿½ï¿½ï¿½ï¿½ï¿½
+    // ï¿½ï¿½ï¿½Ü»ï¿½ï¿½ï¿½Ö£ï¿½
+    // evLoop ï¿½ï¿½ subThreadRunning ï¿½ï¿½Î´ï¿½ï¿½Ê¼ï¿½ï¿½ï¿½ï¿½É£ï¿½ï¿½ï¿½ï¿½ß³Ì¾Í³ï¿½ï¿½ï¿½ï¿½ï¿½Ò»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Úµï¿½ evLoop ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+    // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+    // Ê¹ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ß³ï¿½ï¿½ï¿½ï¿½ï¿½Ò»ï¿½á£¬ï¿½ï¿½Òªï¿½Ãµï¿½Ç°ï¿½ï¿½ï¿½ï¿½Ö±ï¿½Ó½ï¿½ï¿½ï¿½
     pthread_mutex_lock(&thread->mutex);
     while (thread->evLoop == NULL)
     {
-        // »¹Î´³õÊ¼»¯Íê³É£¬×èÈûÖ÷Ïß³Ì
+        // ï¿½ï¿½Î´ï¿½ï¿½Ê¼ï¿½ï¿½ï¿½ï¿½É£ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ß³ï¿½
         pthread_cond_wait(&thread->cond, &thread->mutex);
     }
     pthread_mutex_unlock(&thread->mutex);

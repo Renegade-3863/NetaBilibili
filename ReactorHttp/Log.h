@@ -6,19 +6,19 @@
 
 #if DEBUG
 /*
-*  Èç¹û²»¼Ó do ... while(0) ÔÚ½øÐÐÌõ¼þÅÐ¶ÏµÄÊ±ºò(Ö»ÓÐÒ»¾ä»°), Ê¡ÂÔÁË{}, ¾Í»á³öÏÖÓï·¨´íÎó
+*  ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ do ... while(0) ï¿½Ú½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ð¶Ïµï¿½Ê±ï¿½ï¿½(Ö»ï¿½ï¿½Ò»ï¿½ä»°), Ê¡ï¿½ï¿½ï¿½ï¿½{}, ï¿½Í»ï¿½ï¿½ï¿½ï¿½ï¿½ï·¨ï¿½ï¿½ï¿½ï¿½
 *  if
 *     xxxxx
 *  else
 *     xxxxx
-*  ºê±»Ìæ»»Ö®ºó, ÔÚ else Ç°Ãæ»á³öÏÖÒ»¸ö ;  --> Óï·¨´íÎó
+*  ï¿½ê±»ï¿½æ»»Ö®ï¿½ï¿½, ï¿½ï¿½ else Ç°ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ò»ï¿½ï¿½ ;  --> ï¿½ï·¨ï¿½ï¿½ï¿½ï¿½
 */
 #define LOG(type, fmt, args...)  \
-  do{\
-    printf("%s: %s@%s, line: %d\n***LogInfo[", type, __FILE__, __FUNCTION__, __LINE__);\
-    printf(fmt, ##args);\
-    printf("]\n\n");\
-  }while(0)
+  // do{\
+  //   printf("%s: %s@%s, line: %d\n***LogInfo[", type, __FILE__, __FUNCTION__, __LINE__);\
+  //   printf(fmt, ##args);\
+  //   printf("]\n\n");\
+  // }while(0)
 #define Debug(fmt, args...) LOG("DEBUG", fmt, ##args)
 #define Error(fmt, args...) do{LOG("ERROR", fmt, ##args);exit(0);}while(0)
 #else
