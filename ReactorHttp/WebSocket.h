@@ -5,10 +5,10 @@
 #include "Buffer.h"
 #include "TcpConnection.h"
 
-// WebSocketÖ¡Í·×î´ó³¤¶È
+// WebSocket å¸§å¤´æœ€å¤§é•¿åº¦
 #define WS_MAX_HEADER_SIZE 14
 
-// WebSocket ²Ù×÷Âë
+// WebSocket å¸§ç±»å‹
 typedef enum {
     WS_OPCODE_CONTINUE = 0x0,
     WS_OPCODE_TEXT = 0x1,
@@ -19,9 +19,7 @@ typedef enum {
 } WsOpcode;
 
 
-// WebSocket Ö¡½âÎöº¯Êı
-// readBuf ÖĞ±£´æµÄÊÇ WebSocket Ö¡Êı¾İ
-// ·µ»ØÖµÎª½âÎöºóµÄ payload ³¤¶È£¬Èç¹û½âÎöÊ§°ÜÔò·µ»Ø -1
-int parseWebSocketFrame(struct Buffer* readBuf, uint8_t* opcode, char* payload, size_t* payloadLen);
-// WebSocket ÎÄ±¾Ö¡·¢ËÍº¯Êı
+// WebSocket å¸§è§£æ
+int parseWebSocketFrame(struct Buffer* readBuf, uint8_t* opcode, char* payload, size_t* payloadLen);    
+// WebSocket ï¿½Ä±ï¿½Ö¡ï¿½ï¿½ï¿½Íºï¿½ï¿½ï¿½
 void sendWebSocketTextFrame(struct TcpConnection* conn, const char* msg);
