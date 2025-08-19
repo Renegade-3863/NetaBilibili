@@ -16,28 +16,11 @@
 
 - 基本的运行方法：
     - 这里本人推荐使用仓库内打包好的 dockerfile 文件来构建本地的 Ubuntu 镜像
-    - 备注：如果你本身就是 Linux 系统，或者用了 Windows 的 WSL 子系统，那么也可以直接克隆到 Linux 环境下执行 cmake 相关指令
+    - 备注：如果你本身就是 Linux 系统，或者用了 Windows 的 WSL 子系统，那么也可以直接克隆到 Linux 环境下，在 build 目录中执行 cmake 相关指令
 - 运行步骤
-    如果考虑用本地 Linux 环境，请跳转到步骤 2
-    1. 构建镜像
-    ``` bash
-        # 进入克隆好的项目目录
-        # 强烈建议习惯用 pushd，cd 也可以，但不如 pushd 方便（）
-        pushd ./NetaBilibili/ReactorHttp
-        docker build -t <你起的 docker 镜像名字> .
-    ```
-    2. 使用克隆好的 .sh 脚本运行 docker 容器或直接一步到位启动服务器 
-    （注意，别忘了把脚本中的本机目录路径改成你自己 Linux 环境下的目录，这个目录会挂载到容器内的 /app/test 目录）
-    ``` bash
-        ./runDocker.sh
-    ```
-    3. 一定要看这一条！！！
-    ``` bash
-        # 注意，需要把脚本文件中运行的镜像名字改成你上面起的名字：
-        docker run --rm -it -p ${PORT}:${PORT} -v \
-        "${HOST_DIR}:${CONTAINER_DIR}" \
-        <你起的 docker 镜像名字> \
-        /app/build/ReactorServer \
-        ${PORT} ${CONTAINER_DIR} 
-        # 脚本文件内可以修改运行方式，看一下注释就行
-    ```
+
+``` bash
+    # git 克隆项目，之后 cd 到 NetaBilibili 目录下
+    # 之后直接运行下面一行代码，之后访问 http://localhost:8080 即可
+    docker-compose -f docker-compose.dev.yml up --build
+```
