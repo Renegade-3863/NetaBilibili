@@ -3,7 +3,7 @@
 #include "TcpConnection.h"
 
 
-// ����״̬��ö��
+// 状态码
 enum HttpStatusCode
 {
     Unknown,
@@ -15,28 +15,28 @@ enum HttpStatusCode
     NotFound = 404
 };
 
-// ������Ӧͷ�Ľṹ��
+// 响应头
 struct ResponseHeader
 {
     char key[32];
     char value[128];
 };
 
-// ����һ������ָ�룬������֯Ҫ�ظ����ͻ��˵����ݿ�
+// 响应体
 typedef int (*responseBody)(const char* fileName, struct Buffer* sendBuf, int socket);
 typedef void (*responseRangeBody)(struct HttpResponse* response, struct Buffer* sendBuf, int socket);
 
 
-// ���� response �ṹ��
+// 处理 response 结构体
 struct HttpResponse
 {
-    // ״̬�У�״̬�룬״̬����
+    // 状态码
     enum HttpStatusCode statusCode;
     char statusMsg[128];
     char fileName[128];
-    // ��Ӧͷ - ��ֵ��
+    // 响应头 - 键值对
     struct ResponseHeader* headers;
-    // ��Ӧͷ�ĳ���
+    // 响应头数量
     int headerNum;
     // 要发送的文件描述符
     int fileFd;
@@ -54,11 +54,11 @@ struct HttpResponse
 
 // 初始化 HttpResponse 结构体
 struct HttpResponse* httpResponseInit();
-// ���� HttpResponse 
+// 销毁 HttpResponse 
 void httpResponseDestroy(struct HttpResponse* response);
-// ������Ӧͷ��ֵ��
+// 响应头 - 添加键值对
 void httpResponseAddHeader(struct HttpResponse* response, const char* key, const char* value);
-// ��֯ Http ��Ӧ����
+// 响应头 - 准备响应头
 void httpResponsePrepareMsg(struct TcpConnection* conn, struct HttpResponse* response, struct Buffer* sendBuf, int socket);
 
 // 用于 range request 的响应函数

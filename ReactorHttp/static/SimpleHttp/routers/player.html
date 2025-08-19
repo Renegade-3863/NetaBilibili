@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>播放器</title>
+    <style>
+        body {
+            font-family: Arial;
+            padding: 12px;
+        }
+        video {
+            width: 100%;
+            max-width: 900px;
+        }
+    </style>
+</head>
+<body>
+    <h3 id="title">播放</h3>
+    <!--声明一个用于播放视频的框架类-->
+    <video id="player" controls poster="" crossorigin="anonymous"></video>
+    <div style="margin-top: 8px;">
+        <label>速率:
+            <select id="rate">
+                <option>0.5</option>
+                <option>1.0</option>
+                <option selected>1.25</option>
+                <option>1.5</option>
+                <option>2.0</option>
+            </select>
+        </label>
+        <button id="resume">上次播放位置</button>
+    </div>
+    <script>
+        // 定义一个函数用于获取 URL
+        function qs(name) {
+            return new URLSearchParams(location.search).get(name);
+        }
+        const file = qs('file');
+        const id = qs('id') || file;
+        const player = document.getElementById('player');
+        if(!file) {
+            document.body.innerHTML = '<p>未指定视频文件</p>';
+            throw 0;
+        }
+        console.log('加载视频', id, file);
+        // 指定视频文件路径
+        player.src = file;
+        // 添加元数据加载完成事件监听
+        player.addEventListener('loadedmetadata', () => {
+            // 获取 title 后显示到页面上
+            document.getElementById('title').innerText = document.title = (qs('title') || '播放');
+        });
+        const key = 'video-pos-'+id;
+        player.addEventListener('timeupdate', () => {
+            try {
+                localStorage.setItem(key, Math.floor(player.currentTime));
+            } catch (e) {
+                console.warn('无法保存播放位置到本地存储', e);
+            }
+        });
+        document.getElementById('resume').addEventListener('click', () => {
+            const v = localStorage.getItem(key);
+            if(v) player.currentTime = +v;
+        });
+        document.getElementById('rate').addEventListener('change', (e) => player.playbackRate = +e.target.value);
+        // 处理 seeking errors / network issues
+        player.addEventListener('error', (e) => {
+            console.error('Video error', e);
+        });
+    </script>
+</body>
+</html>

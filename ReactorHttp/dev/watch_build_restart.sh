@@ -17,7 +17,7 @@ build_cmd()
 # 启动服务器的函数，包装了一个运行命令行，以及设定了服务器进程的 PID
 start_server() {
   # start the built server (use absolute path), write logs to /var/log
-  /app/build/ReactorServer "8080" "/app/test" > /var/log/reactor_server.log 2>&1 &
+  /app/build/ReactorServer "8080" "/app/static/SimpleHttp/" > /var/log/reactor_server.log 2>&1 &
   server_pid=$!
   # give it a moment to start
   sleep 0.2
@@ -71,6 +71,7 @@ if command -v inotifywait >/dev/null 2>&1; then
 else
   # 常规轮询，每隔 2 秒检测一次更改
   while true; do
+    echo "Is this working?"
     sleep 2
     rebuild_and_restart
   done

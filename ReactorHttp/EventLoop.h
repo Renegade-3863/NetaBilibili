@@ -8,13 +8,13 @@ extern struct Dispatcher EpollDistatcher;
 extern struct Dispatcher PollDistatcher;
 extern struct Dispatcher SelectDistatcher;
 
-// ´¦Àí¸Ã½ÚµãÖĞµÄ channel µÄ·½Ê½
+// äº‹ä»¶ç±»å‹
 enum ElemType { ADD, DELETE, MODIFY };
 
-// ¶¨ÒåÈÎÎñ¶ÓÁĞµÄ½Úµã
+// ä»»åŠ¡é˜Ÿåˆ—ä¸­çš„èŠ‚ç‚¹
 struct ChannelElement
 {
-    int type;                           // ÈçºÎ´¦Àí¸Ã½ÚµãÖĞµÄ channel
+    int type;                           // ä»»åŠ¡ç±»å‹
     struct Channel* channel;
     struct ChannelElement* next;
 };
@@ -26,35 +26,36 @@ struct EventLoop
     bool isQuit;
     struct Dispatcher* dispatcher;
     void* dispatcherData;
-    // ÈÎÎñ¶ÓÁĞ
+    // ä»»åŠ¡é˜Ÿåˆ—
     struct ChannelElement* head;
     struct ChannelElement* tail;
     // map
     struct ChannelMap* channelMap;
-    // Ïß³Ì ID, name, mutex
+    // çº¿ç¨‹ ID, name, mutex
     pthread_t threadID;
     char threadName[32];
-    // mutex ÓÃÓÚ±£»¤ÉÏÃæµÄÈÎÎñ¶ÓÁĞ£º×ÓÏß³ÌµÄÈÎÎñ¶ÓÁĞ¿ÉÄÜ»á±»Ö÷Ïß³ÌºÍ¹¤×÷Ïß³Ì²¢·¢ĞŞ¸Ä
+    // mutex äº’æ–¥é”ï¼Œç”¨äºä¿æŠ¤ä»»åŠ¡é˜Ÿåˆ—çš„çº¿ç¨‹å®‰å…¨
     pthread_mutex_t mutex;
-    // ´æ´¢±¾µØÍ¨ĞÅµÄÎÄ¼şÃèÊö·û£¬Í¨¹ı socketpair ³õÊ¼»¯
+    // ç”¨äºå”¤é†’çº¿ç¨‹çš„æ–‡ä»¶æè¿°ç¬¦
     int socketPair[2];
 };
 
-// ³õÊ¼»¯
+// åˆå§‹åŒ–
 struct EventLoop* eventLoopInit();
 struct EventLoop* eventLoopInitEx(const char* threadName);
-// Æô¶¯·´Ó¦¶ÑÄ£ĞÍ
+// è¿è¡Œäº‹ä»¶å¾ªç¯
 int eventLoopRun(struct EventLoop* evLoop);
-// ´¦Àí±»¼¤»îµÄÎÄ¼şÃèÊö·û
+// æ¿€æ´»äº‹ä»¶å¤„ç†
 int eventActivate(struct EventLoop* evLoop, int fd, int event);
-// Ìí¼ÓÈÎÎñµ½ÈÎÎñ¶ÓÁĞ
+// æ·»åŠ ä»»åŠ¡åˆ°äº‹ä»¶å¾ªç¯
 int eventLoopAddTask(struct EventLoop* evLoop, struct Channel* channel, int type);
-// ´¦ÀíÈÎÎñ¶ÓÁĞÖĞµÄÈÎÎñ
+// å¤„ç†äº‹ä»¶å¾ªç¯ä¸­çš„ä»»åŠ¡
 int eventLoopProcessTask(struct EventLoop* evLoop);
-// ´¦Àí dispatcher ÖĞµÄ½Úµã
+// æ·»åŠ  dispatcher ç›¸å…³çš„èŠ‚ç‚¹
 int eventLoopAdd(struct EventLoop* evLoop, struct Channel* channel);
 int eventLoopRemove(struct EventLoop* evLoop, struct Channel* channel);
 int eventLoopModify(struct EventLoop* evLoop, struct Channel* channel);
-// ÊÍ·Å channel ¶ÔÏó
-// evLoop ²ÎÊıÓÃÓÚ¶¨Î» ChannelMap ¶ÔÏó
+// æ¸…ç©º dispatcher ç›¸å…³çš„èŠ‚ç‚¹
+int eventLoopClear(struct EventLoop* evLoop);
+// é”€æ¯ channel èŠ‚ç‚¹
 int destroyChannel(struct EventLoop* evLoop, struct Channel* channel);

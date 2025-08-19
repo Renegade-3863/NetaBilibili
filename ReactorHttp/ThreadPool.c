@@ -7,7 +7,6 @@ struct ThreadPool* threadPoolInit(struct EventLoop* mainLoop, int count)
     struct ThreadPool* pool = (struct ThreadPool*)malloc(sizeof(struct ThreadPool));
     pool->index = 0;
     pool->isStart = false;
-    //printf("Pool->isStart = %d\n", pool->isStart);
     pool->mainLoop = mainLoop;
     pool->threadNum = count;
     pool->workerThreads = (struct WorkerThread*)malloc(sizeof(struct WorkerThread) * count);
@@ -17,37 +16,32 @@ struct ThreadPool* threadPoolInit(struct EventLoop* mainLoop, int count)
 void threadPoolRun(struct ThreadPool* pool)
 {
     assert(pool && !pool->isStart);
-    // Ö´ĞĞ threadPoolRun µÄº¯Êı£¬Õı³£Çé¿öÏÂ¶¼ÊÇÖ÷Ïß³Ì
+    // æ‰§è¡Œ threadPoolRun æ—¶å¿…é¡»åœ¨ä¸»çº¿ç¨‹ä¸­
     if (pool->mainLoop->threadID != pthread_self())
     {
         exit(0);
     }
     pool->isStart = true;
-    // ¶à·´Ó¦¶ÑÄ£ĞÍ
     if (pool->threadNum)
     {
-        // ¶ÔÏß³Ì³ØÖĞµÄ¹¤×÷Ïß³Ì½øĞĞ³õÊ¼»¯
         for (int i = 0; i < pool->threadNum; ++i)
         {
-            // ³õÊ¼»¯¹¤×÷Ïß³Ì
+            // åˆå§‹åŒ–å·¥ä½œçº¿ç¨‹
             workerThreadInit(&pool->workerThreads[i], pool->index);
-            // ÔËĞĞ¹¤×÷Ïß³Ì
+            // å¯åŠ¨å·¥ä½œçº¿ç¨‹
             workerThreadRun(&pool->workerThreads[i]);
         }
     }
-    // ·ñÔò£¬µ¥·´Ó¦¶ÑÄ£ĞÍ
 }
 
 struct EventLoop* takeWorkerEventLoop(struct ThreadPool* pool)
 {
     assert(pool->isStart);
-    // Ö´ĞĞ takeWorkerEventLoop µÄº¯Êı£¬Õı³£Çé¿öÏÂ¶¼ÊÇÖ÷Ïß³Ì
+    // æ‰§è¡Œ takeWorkerEventLoop æ—¶å¿…é¡»åœ¨ä¸»çº¿ç¨‹ä¸­
     if (pool->mainLoop->threadID != pthread_self())
     {
         exit(0);
     }
-    // ´ÓÏß³Ì³ØÖĞÕÒÒ»¸ö×ÓÏß³Ì£¬È»ºóÈ¡³öÆäÖĞµÄ·´Ó¦¶ÑÊµÀı
-    // Èç¹ûÊÇµ¥·´Ó¦¶ÑÄ£ĞÍ£¬ÄÇÃ´¾ÍÓÃÖ÷Ïß³ÌµÄ·´Ó¦¶ÑÄ£ĞÍ
     struct EventLoop* evLoop = pool->mainLoop;
     if (pool->threadNum > 0)
     {

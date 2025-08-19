@@ -3,24 +3,23 @@
 #include "WorkerThread.h"
 #include <stdbool.h>
 
-// ¶¨ÒåÏß³Ì³Ø
+// çº¿ç¨‹æ± 
 struct ThreadPool
 {
-    // Ö÷Ïß³ÌµÄ·´Ó¦¶ÑÄ£ĞÍ£º±¸ÓÃ£¬µ±Ïß³Ì³ØÎŞ×ÓÏß³ÌµÄÊ±ºò£¬²ÅÆôÓÃÕâ¸ö mainLoop£¨×ª»»Îªµ¥·´Ó¦¶ÑÄ£ĞÍ£©
+    // ä¸»çº¿ç¨‹çš„äº‹ä»¶å¾ªç¯
     struct EventLoop* mainLoop;
-    // ±ê¼ÇÎ»£¬±ê¼ÇÏß³Ì³ØÊÇ·ñÆô¶¯ÁË
     bool isStart;
-    // ¼ÇÂ¼Ïß³Ì³ØÓµÓĞµÄ×ÓÏß³Ì×ÜÊı
+    // è®°å½•å·¥ä½œçº¿ç¨‹çš„æ•°é‡
     int threadNum;
-    // ×ÓÏß³ÌÖ¸ÕëÊı×é
+    // å·¥ä½œçº¿ç¨‹æ•°ç»„
     struct WorkerThread* workerThreads;
-    // index ÓÃÓÚ Round Robin µØ´ÓÏß³Ì³ØÖĞÈ¡ÓÃÏß³Ì
+    // index ç”¨äº Round Robin è½®è¯¢è·å–å·¥ä½œçº¿ç¨‹
     int index;
 };
 
-// ³õÊ¼»¯Ïß³Ì³Ø
+// åˆå§‹åŒ–çº¿ç¨‹æ± 
 struct ThreadPool* threadPoolInit(struct EventLoop* mainLoop, int count);
-// Æô¶¯Ïß³Ì³Ø
+// å¯åŠ¨çº¿ç¨‹æ± 
 void threadPoolRun(struct ThreadPool* pool);
-// È¡³öÏß³Ì³ØÖĞµÄÄ³¸ö×ÓÏß³ÌµÄ·´Ó¦¶ÑÊµÀı£¨Õâ¸öº¯ÊıÒ²Ö»»áÓÉÖ÷Ïß³ÌÀ´Ö´ĞĞ£©
+// å–å‡ºçº¿ç¨‹æ± ä¸­çš„æŸä¸ªå·¥ä½œçº¿ç¨‹çš„äº‹ä»¶å¾ªç¯ï¼Œå®é™…ä¸Šä¹Ÿåªèƒ½å–å‡ºå·¥ä½œçº¿ç¨‹çš„äº‹ä»¶å¾ªç¯
 struct EventLoop* takeWorkerEventLoop(struct ThreadPool* pool);

@@ -6,7 +6,6 @@
 
 int main(int argc, char* argv[])
 {
-    //printf("Hello?");
     if (argc < 3)
     {
         // 参数总个数少于 3，说明调用不合法，我们提示用户修改调用方法

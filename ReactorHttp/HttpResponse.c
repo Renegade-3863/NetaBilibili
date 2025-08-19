@@ -19,14 +19,14 @@ struct HttpResponse* httpResponseInit()
 {
     struct HttpResponse* response = (struct HttpResponse*)malloc(sizeof(struct HttpResponse));
     response->headerNum = 0;
-    // Ĭ�ϳ�ʼ���� 16 ����λ
+    // 默认初始化 16 个头部
     int size = sizeof(struct ResponseHeader) * ResHeaderSize;
     response->headers = (struct ResponseHeader*)malloc(size);
     response->statusCode = Unknown;
-    // ��ʼ�� headers ����
+    // 初始化 headers
     bzero(response->headers, size);
     bzero(response->statusMsg, sizeof(response->statusMsg));
-    // ��ʼ������ָ��Ϊ NULL
+    // 初始化 sendDataFunc 为 NULL
     response->sendDataFunc = NULL;
     response->fileFd = -1;
     response->fileOffset = 0;
@@ -55,7 +55,6 @@ void httpResponseAddHeader(struct HttpResponse* response, const char* key, const
 {
     if (response == NULL || key == NULL || value == NULL)
     {
-        // �޷�����ͷ��ֱ�ӷ��ؼ���
         return;
     }
     strcpy(response->headers[response->headerNum].key, key);
@@ -65,21 +64,16 @@ void httpResponseAddHeader(struct HttpResponse* response, const char* key, const
 
 void httpResponsePrepareMsg(struct TcpConnection* conn, struct HttpResponse* response, struct Buffer* sendBuf, int socket)
 {
-    // ״̬��
     char tmp[1024] = { 0 };
     sprintf(tmp, "HTTP/1.1 %d %s\r\n", response->statusCode, response->statusMsg);
-    //printf("Status line: %s\n", tmp);
-    //printf("Send data to socket %d\n", socket);
 
     bufferAppendString(sendBuf, tmp);
-    // ��Ӧͷ
     for (int i = 0; i < response->headerNum; ++i)
     {
         sprintf(tmp, "%s: %s\r\n", response->headers[i].key, response->headers[i].value);
         //printf("Header: %s\n", tmp);
         bufferAppendString(sendBuf, tmp);
     }
-    // ����
     bufferAppendString(sendBuf, "\r\n");
 #ifndef MSG_SEND_AUTO
     // 同步发送头部+短体数据（非事件驱动模式）

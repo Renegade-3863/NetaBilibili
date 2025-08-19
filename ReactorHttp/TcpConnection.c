@@ -26,7 +26,7 @@ static int processRead(void *arg)
             // printf("totalLen = %d\n", totalLen);
             if (flag < 0)
             {
-                // ��� flag < 0�����������ݲ�������Ҳ�����ǽ����Ѿ����
+                // 如果 flag < 0，说明数据不完整，无法解析
                 break;
             }
             if (opcode == WS_OPCODE_TEXT)
@@ -57,10 +57,7 @@ static int processRead(void *arg)
     }
 
     // 2. 处理常规 HTTP 连接的逻辑
-    // printf("Process Read on fd %d\n", conn->response->statusCode);
-    // int count = bufferSocketRead(conn->readBuf, conn->channel->fd);
-
-    // 循环读取，知道 EAGAIN / EWOULDBLOCK / error / peer close
+    // 循环读取，直到 EAGAIN / EWOULDBLOCK / error / peer close
     while (1)
     {
         int rc = bufferSocketRead(conn->readBuf, conn->channel->fd);
@@ -229,7 +226,6 @@ static int processWrite(void *arg)
             }
         }
         // 发送完毕：关闭文件描述符并标记为已完成
-        // printf("Closing file descriptor %d after sending range request\n", conn->response->fileFd);
         close(conn->response->fileFd);
         conn->response->fileFd = -1;
         conn->response->fileOffset = 0;
@@ -299,6 +295,7 @@ struct TcpConnection *tcpConnectionInit(int fd, struct EventLoop *evLoop)
 
 int tcpConnectionDestroy(void *arg)
 {
+    
     struct TcpConnection *conn = (struct TcpConnection *)arg;
     if (conn)
     {

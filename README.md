@@ -24,7 +24,7 @@
         # 进入克隆好的项目目录
         # 强烈建议习惯用 pushd，cd 也可以，但不如 pushd 方便（）
         pushd ./NetaBilibili/ReactorHttp
-        docker build -t <你起的 docker 镜像名字>
+        docker build -t <你起的 docker 镜像名字> .
     ```
     2. 使用克隆好的 .sh 脚本运行 docker 容器或直接一步到位启动服务器 
     （注意，别忘了把脚本中的本机目录路径改成你自己 Linux 环境下的目录，这个目录会挂载到容器内的 /app/test 目录）

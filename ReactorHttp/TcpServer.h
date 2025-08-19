@@ -16,9 +16,9 @@ struct TcpServer
     struct Listener* listener;
 };
 
-// ³õÊ¼»¯ TCP ·şÎñÆ÷ÊµÀı£¬Ö¸¶¨·şÎñÆ÷Òª°ó¶¨µÄ¶Ë¿Ú£¬ÒÔ¼°Ê¹ÓÃµÄÏß³Ì³ØÖĞµÄÏß³Ì¸öÊı
+// åˆå§‹åŒ– TCP æœåŠ¡å™¨
 struct TcpServer* tcpServerInit(unsigned short port, int threadNum);
-// ³õÊ¼»¯¼àÌıÎÄ¼şÃèÊö·û
+// åˆå§‹åŒ–ç›‘å¬å™¨
 struct Listener* listenerInit(unsigned short port);
-// ÔËĞĞ TCP ·şÎñÆ÷
+// è¿è¡Œ TCP æœåŠ¡å™¨
 void tcpServerRun(struct TcpServer* server);

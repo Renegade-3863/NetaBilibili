@@ -30,7 +30,6 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
 set(SRC_FILES
     Channel.c
-    SelectDispatcher.c
     HttpResponse.c
     EventLoop.c
     Buffer.c
@@ -43,8 +42,6 @@ set(SRC_FILES
     WebSocket.c            
     HttpRequest.c          
     WorkerThread.c         
-    PollDispatcher.c
-    SelectDispatcher.c        
 )
 
 add_executable(ReactorServer ${SRC_FILES})

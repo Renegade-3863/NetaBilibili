@@ -954,7 +954,6 @@ bool processHttpRequest(struct TcpConnection *conn, struct HttpRequest *request,
         eventLoopModify(conn->evLoop, conn->channel);
         response->fileOffset = 0;
         response->fileLength = st.st_size;
-        // lazy open
         response->fileFd = open(file, O_RDONLY);
         // printf("send complete: Opening a new file descriptor %d!\n", response->fileFd);
 

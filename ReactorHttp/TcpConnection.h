@@ -46,7 +46,7 @@ struct TcpConnection
     // int maxPending;
 };
 
-// ��ʼ�� TcpConnection
+// 初始化 TcpConnection
 struct TcpConnection* tcpConnectionInit(int fd, struct EventLoop* evLoop);
-// �ͷű�Ҫ��Դ
+// 销毁 TcpConnection 时需要调用的回调函数
 int tcpConnectionDestroy(void* arg);

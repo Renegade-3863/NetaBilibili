@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>视频平台 - 列表</title>
+
+<!-- 全局样式 -->
+<style>
+    /* 基础样式 */
+    /* 设定全局字体和背景色 */
+    body {
+        font-family: Arial, Helvetica, sans-serif;
+        margin: 16px
+    }
+    .grid {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+    }
+    .card img {
+        width: 100%;
+        height: 120px;
+        object-fit: cover;
+        padding: 8px;
+        border-radius: 6px;
+    }
+    .card h4 {
+        margin: 8px 0 4px;
+        font-size: 14px;
+    }
+    .card button{
+        padding: 6px 10px;
+    }
+</style>
+</head>
+<body>
+    <h2>视频列表</h2>
+    <div id="grid" class="grid"></div>
+<script>
+async function load() {
+    try {
+        // 获取视频元数据
+        const res = await fetch('/public/videos.json');
+        if (!res.ok) {
+            const txt = await res.text().catch(() => '<unreadable body>');
+            throw new Error('Failed to fetch videos.json: ' + res.status + ' ' + res.statusText + '\n' + txt);
+        }
+        // 把响应数据解析为 JSON 对象，解析失败时打印原始文本以便调试
+        let list;
+        try {
+            list = await res.json();
+        } catch (e) {
+            const text = await res.text().catch(() => '<unable to read body>');
+            console.error('解析 videos.json 失败，原始响应：', text);
+            throw e;
+        }
+        console.log('获取视频列表', list);
+
+        // 获取网格容器，用于渲染结果
+        const grid = document.getElementById('grid');
+        list.forEach(v => {
+            const d = document.createElement('div');
+            d.className='card';
+            d.innerHTML = `
+                <img src="${v.poster || '/static/视频不见惹.jpg'}" alt="">
+                <h4>${v.title}</h4>
+                <div>时长: ${Math.round(v.duration || 0)}s</div>
+                <div style="margin-top:8px">
+                    <button data-id="${v.id}" data-file="${v.file}">播放</button>
+                    <a href="${v.download}" download style="margin-left:8px">下载</a>
+                </div>
+            `;
+            grid.appendChild(d);
+        });
+        grid.addEventListener('click', e => {
+            const btn = e.target.closest('button[data-id]');
+            if(!btn) {
+                return;
+            }
+            const id = btn.dataset.id;
+            const file = btn.dataset.file;
+            // 跳转到播放器页面并传递文件路径给播放器页面
+            location.href = '/routers/player.html?id=' + encodeURIComponent(id) + '&file=' + encodeURIComponent(file);
+        });
+    } catch (err) {
+        document.getElementById('grid').innerText = "加载失败";
+        console.error(err);
+    }
+}
+
+load();
+
+</script>
+</body>
+</html>

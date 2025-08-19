@@ -5,16 +5,16 @@
 
 struct ChannelMap
 {
-    int size;       // ¼ÇÂ¼Ö¸ÕëÖ¸ÏòµÄÊı×éµÄÔªËØ¸öÊı
-    // struct Channel* list[];      ²»ÓÃÕâÑùµÄ¾²Ì¬Êı×é£¬ÎÒÃÇÓÃ¶¯Ì¬Êı×é
+    int size;       // è®°å½•å½“å‰æ•°ç»„çš„å¤§å°
+    // struct Channel* list[];      è¿™æ˜¯ä¸€ä¸ªçµæ´»æ•°ç»„æˆå‘˜ï¼Œè¡¨ç¤ºåŠ¨æ€æ•°ç»„
     struct Channel** list;
 };
 
-// ³õÊ¼»¯
+// åˆå§‹åŒ–
 struct ChannelMap* channelMapInit(int size);
-// Çå¿Õ map 
+// æ¸…ç©º map
 void ChannelMapClear(struct ChannelMap* map);
-// ÖØĞÂ·ÖÅäÄÚ´æ¿Õ¼ä
-// newSize: ÒªÌí¼ÓµÄÔªËØµÄ¸öÊı
-// unitSize: ÒªÌí¼ÓµÄÔªËØµÄ´óĞ¡£¨×Ö½ÚÎªµ¥Î»£©
+// æ‰©å±•å†…å­˜
+// newSize: éœ€è¦æ‰©å±•çš„å…ƒç´ çš„å¤§å°
+// unitSize: éœ€è¦æ‰©å±•çš„å…ƒç´ çš„å¤§å°ï¼Œå•ä½ä¸ºå­—èŠ‚
 bool makeMapRoom(struct ChannelMap* map, int newSize, int unitSize);

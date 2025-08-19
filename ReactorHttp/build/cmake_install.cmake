@@ -1,4 +1,4 @@
-# Install script for directory: /home/hzouaf/task/prev/NetaBilibili/ReactorHttp
+# Install script for directory: /app
 
 # Set the install prefix
 if(NOT DEFINED CMAKE_INSTALL_PREFIX)
@@ -50,5 +50,5 @@ endif()
 
 string(REPLACE ";" "\n" CMAKE_INSTALL_MANIFEST_CONTENT
        "${CMAKE_INSTALL_MANIFEST_FILES}")
-file(WRITE "/home/hzouaf/task/prev/NetaBilibili/ReactorHttp/build/${CMAKE_INSTALL_MANIFEST}"
+file(WRITE "/app/build/${CMAKE_INSTALL_MANIFEST}"
      "${CMAKE_INSTALL_MANIFEST_CONTENT}")

@@ -3,7 +3,6 @@
 
 int workerThreadInit(struct WorkerThread* thread, int index)
 {
-    // ��ʼ����ʱ�򣬹����̻߳�û�з�Ӧ��ģ�ͺ��߳� ID
     thread->evLoop = NULL;
     thread->threadID = 0;
     sprintf(thread->name, "SubThread-%d", index);
@@ -12,7 +11,7 @@ int workerThreadInit(struct WorkerThread* thread, int index)
     return 0;
 }
 
-// ���̵߳Ļص�����
+// 工作线程的运行函数
 static void* subThreadRunning(void* arg)
 {
     struct WorkerThread* thread = (struct WorkerThread*)arg;
@@ -26,17 +25,11 @@ static void* subThreadRunning(void* arg)
 
 void workerThreadRun(struct WorkerThread* thread)
 {
-    // �������߳�
+    // 启动工作线程
     pthread_create(&thread->threadID, NULL, subThreadRunning, thread);
-    // pthread_create ����������̺߳�subThreadRunning ����һ��ִ�����
-    // ���ܻ���֣�
-    // evLoop �� subThreadRunning ��δ��ʼ����ɣ����߳̾ͳ�����һ�������ڵ� evLoop ��������������
-    // ���������
-    // ʹ�����������������߳�����һ�ᣬ��Ҫ�õ�ǰ����ֱ�ӽ���
     pthread_mutex_lock(&thread->mutex);
     while (thread->evLoop == NULL)
     {
-        // ��δ��ʼ����ɣ��������߳�
         pthread_cond_wait(&thread->cond, &thread->mutex);
     }
     pthread_mutex_unlock(&thread->mutex);

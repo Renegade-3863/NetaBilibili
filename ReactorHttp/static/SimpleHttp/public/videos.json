@@ -1,0 +1,10 @@
+[
+    {
+        "id": "sample1",
+        "title": "Low_Res",
+        "file": "/Low_Res.mp4",
+        "poster": "/Low_Res.png",
+        "download": "http://localhost:8080/Low_Res.mp4",
+        "duration": 5
+    }
+]

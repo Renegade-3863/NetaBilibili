@@ -10,6 +10,7 @@
 
 struct EventLoop* eventLoopInit()
 {
+
     return eventLoopInitEx(NULL);
 }
 
@@ -72,7 +73,7 @@ int eventActivate(struct EventLoop* evLoop, int fd, int event)
     {
         return -1;
     }
-    // ȡ�� channel
+    // 获取 channel
     struct Channel* channel = evLoop->channelMap->list[fd];
     assert(channel->fd == fd);
     if (event & ReadEvent && channel->readCallback)
