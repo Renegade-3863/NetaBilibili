@@ -62,7 +62,6 @@ static void* epollInit()
         perror("epoll_create");
         exit(0);
     }
-    // calloc �ڷ����ڴ�ռ��ͬʱ�������䵽���ڴ�ռ��ʼ��Ϊȫ 0
     data->events = (struct epoll_event*)calloc(Max, sizeof(struct epoll_event));
 
     return data;
@@ -87,7 +86,6 @@ static int epollRemove(struct Channel* channel, struct EventLoop* evLoop)
         perror("epoll_ctl_del");
         exit(0);
     }
-    // ͨ�� channel �ͷŶ�Ӧ�� TcpConnection ����
     channel->destroyCallback(channel->arg);
     return ret;
 }
@@ -106,23 +104,21 @@ static int epollModify(struct Channel* channel, struct EventLoop* evLoop)
 static int epollDispatch(struct EventLoop* evLoop, int timeout)
 {
     struct EpollData* data = (struct EpollData*)evLoop->dispatcherData;
-    // epoll_wait ���յĳ�ʱʱ����������λΪ���룬����Ҫ����Ϊ��λ�����ݳ��� 1000
+    // epoll_wait 返回的时间单位是毫秒，因此需要将超时时间转换为毫秒
     int count = epoll_wait(data->epfd, data->events, Max, timeout * 1000);
-    //printf("epoll_wait returned %d events\n", count);
     for (int i = 0; i < count; ++i)
     {
         int events = data->events[i].events;
         int fd = data->events[i].data.fd;
-        // EPOLLERR���Զ��Ѿ��Ͽ�����
-        // EPOLLHUP���Զ��Ѿ��Ͽ����ӣ������˻�����Է���������
+        // EPOLLHUP表示对端已经关闭连接
         if (events & EPOLLERR || events & EPOLLHUP)
         {
-            // �Է��Ѿ��Ͽ����ӣ�ɾ�� fd ����
-            // epollRemove(Channel, evLoop);
+            // 连接已经关闭，移除 fd
+            epollRemove(evLoop->channelMap->list[fd], evLoop);
             continue;
         }
-        // ����Ϊ�������¼������¼�/д�¼�
-        // ��Ҫ���ö�Ӧ�Ļص�����
+        // 处理为读事件/写事件
+        // 需要触发相应的回调
         if (events & EPOLLIN)
         {
             eventActivate(evLoop, fd, ReadEvent);

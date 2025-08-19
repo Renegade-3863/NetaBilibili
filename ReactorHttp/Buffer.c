@@ -9,9 +9,6 @@
 #include <strings.h>
 #include <errno.h>
 
-// 最大缓冲区上限，防止内存被无限制扩展（可根据需要调整）
-#define MAX_BUFFER_CAPACITY (100 * 1024 * 1024) // 100MB
-
 struct Buffer* bufferInit(int size)
 {
     struct Buffer* buffer = (struct Buffer*)malloc(sizeof(struct Buffer));
@@ -20,7 +17,7 @@ struct Buffer* bufferInit(int size)
         buffer->data = (char*)malloc(sizeof(char) * size);
         buffer->capacity = size;
         buffer->readPos = buffer->writePos = 0;
-        // �ڴ��ʼ��
+        // 内存初始化
         memset(buffer->data, 0, size);
     }
     return buffer;
@@ -41,35 +38,30 @@ void bufferDestroy(struct Buffer* buf)
 
 void bufferExtendRoom(struct Buffer* buffer, int size)
 {
-    // 1. �ڴ��㹻�� - ����Ҫ����
+    // 1. 内存空间足够 - 无需扩展
     if (bufferWriteableSize(buffer) >= size)
     {
         return;
     }
-    // 2. �ڴ湻�ã�������Ҫ�ϲ� - Ҳ����Ҫ����
-    // ʣ��Ŀ�д�ڴ� + �Ѷ����ڴ� > size
+    // 2. 需要合并 - 但不需要扩展
     else if (buffer->readPos + bufferWriteableSize(buffer) > size)
     {
-        // ��δ�����ֽڿ��ƶ��� buffer �Ŀ�ͷ��Ҳ���� data �ĵ�ַ�ϣ�
-        // ��ȡδ�����ڴ��С
+        // 将未读数据移动到 buffer 的开头，并更新指针
         int readable = bufferReadableSize(buffer);
-        // �ƶ��ڴ�
         memcpy(buffer->data, buffer->data+buffer->readPos, readable);
-        // ���� readPos �� writePos
+        // 更新 readPos 和 writePos
         buffer->readPos = 0;
         buffer->writePos = readable;
     }
-    // 3. �ڴ治���ã��ϲ�Ҳ������- ��Ҫ����
+    // 3. 需要扩展，且无法合并
     else
     {
-        // printf("Buffer extend room: %d bytes\n", size);
         void* temp = realloc(buffer->data, buffer->capacity + size);
         if (!temp)
         {
-            return; // �����ڴ�ʧ��
+            return; 
         }
         memset(temp + buffer->capacity, 0, size);
-        // �������ݳ�Ա
         buffer->data = temp;
         buffer->capacity += size;
     }
@@ -91,13 +83,12 @@ int bufferAppendData(struct Buffer* buffer, const char* data, int size)
     {
         return -1;
     }
-    // �ж��Ƿ���Ҫ���ݣ��������Ҫ����������ͽ�������
+    // 判断是否需要扩展内存，若需要则进行扩展
     bufferExtendRoom(buffer, size);
     int writeable = bufferWriteableSize(buffer);
     if (writeable < size)
     {
         // 扩容失败或超过上限
-        printf("bufferAppendData: not enough space, need=%d, have=%d\n", size, writeable);
         return -1;
     }
     memcpy(buffer->data + buffer->writePos, data, size);
@@ -117,14 +108,14 @@ int bufferSocketRead(struct Buffer* buffer, int fd)
     // read/recv/readv
     struct iovec vec[2];
     int writeable = bufferWriteableSize(buffer);
-    // ��ʼ������Ԫ��
+    // 初始化 iovec 结构体数组
     vec[0].iov_base = buffer->data + buffer->writePos;
     vec[0].iov_len = writeable;
-    // malloc �������ڴ棬������������ͷ�
+    // malloc 申请额外的内存空间，用于存储从 socket 读取的数据
     char* tmpbuf = (char*)malloc(40960);
     vec[1].iov_base = tmpbuf;
     vec[1].iov_len = 40960;
-    // result ����ֵ����һ�����յ��˶����ֽڣ����� -1 ˵�����ú���ʧ��
+    // result 是 readv 的返回值，表示实际读取的字节数，-1 表示读取失败
     int result = readv(fd, vec, 2);
     if (result == -1)
     {
@@ -140,19 +131,19 @@ int bufferSocketRead(struct Buffer* buffer, int fd)
     }
     else if (result <= writeable)
     {
-        // ȫ��д�뵽�� vec[0] �У�Ҳ���� buffer ��
+        // 完全写入到 vec[0] 中，也就是 buffer 中
         buffer->writePos += result;
     }
     else
     {
-        // �����˸��� buffer->writePos
+        // 完全写入到 vec[0] 中，也就是 buffer 中
         buffer->writePos = buffer->capacity;
-        // ������Щ����д���� vec[1] �У�Ҳ���Ƕ���������ڴ��У���Ҫ�ƶ��� buffer ��
+        // 将 vec[1] 中的数据移动到 buffer 中
         if (bufferAppendData(buffer, tmpbuf, result - writeable) != 0)
         {
             // append 失败，返回错误以便上层处理回压
-        free(tmpbuf);
-        return -1;
+            free(tmpbuf);
+            return -1;
         }
     }
     free(tmpbuf);
@@ -162,20 +153,18 @@ int bufferSocketRead(struct Buffer* buffer, int fd)
 
 char* bufferFindCRLF(struct Buffer* buffer)
 {
-    // strstr --> ��һ�����ַ�����ƥ��һ�����ַ��������� \0 �ͽ����ˣ�
-    // memmem --> ��һ�������ݿ���ƥ��һ�������ݿ飨��Ҫָ�����ݿ�Ĵ�С��
+    // strstr --> 查找第一个出现的子字符串
+    // memmem --> 查找第一个出现的子数据
     char* ptr = memmem(buffer->data + buffer->readPos, bufferReadableSize(buffer), "\r\n", 2);
     return ptr;
 }
 
 int bufferSendData(struct Buffer* buffer, int socket)
 {
-    // �ж� buffer ���������ݣ����������÷���
+    // 判断 buffer 中是否有可读数据，若没有则直接返回
     int readable = bufferReadableSize(buffer);
     if (readable > 0)
     {
-        //printf("Sending %d bytes data to socket %d\n", readable, socket);
-        //printf("The thread that is sending data is %ld\n", pthread_self());
         int count = send(socket, buffer->data + buffer->readPos, readable, MSG_NOSIGNAL);
         if (count > 0)
         {

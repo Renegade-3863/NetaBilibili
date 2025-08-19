@@ -1,6 +1,6 @@
 #include "WebSocket.h"
 
-// WebSocket Ö¡¸ñÊ½ËµÃ÷
+// WebSocket Ö¡ï¿½ï¿½Ê½Ëµï¿½ï¿½
 /*
 
       0                   1                   2                   3
@@ -26,80 +26,80 @@
 
 int parseWebSocketFrame(struct Buffer* readBuf, uint8_t* opcode, char* payload, size_t* payloadLen)
 {
-    // Èç¹û²»¹»Á½×Ö½Ú£¬Õâ¸öÖ¡ÖÐÁ¬³¤¶ÈÐÅÏ¢¶¼Ã»ÓÐ£¬ÎÞ·¨½âÎö
+    // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö½Ú£ï¿½ï¿½ï¿½ï¿½Ö¡ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ï¢ï¿½ï¿½Ã»ï¿½Ð£ï¿½ï¿½Þ·ï¿½ï¿½ï¿½ï¿½ï¿½
     int readableSize = bufferReadableSize(readBuf);
     if (readableSize < 2)
     {
-        return -1; // Êý¾Ý²»×ã£¬ÎÞ·¨½âÎö
+        return -1; // ï¿½ï¿½ï¿½Ý²ï¿½ï¿½ã£¬ï¿½Þ·ï¿½ï¿½ï¿½ï¿½ï¿½
     }
-    // ¶ÁÈ¡µÚÒ»¸ö×Ö½Ú£¬»ñÈ¡ FIN ºÍ opcode
+    // ï¿½ï¿½È¡ï¿½ï¿½Ò»ï¿½ï¿½ï¿½Ö½Ú£ï¿½ï¿½ï¿½È¡ FIN ï¿½ï¿½ opcode
     unsigned char* data = (unsigned char*)(readBuf->data + readBuf->readPos);
     // FIN Î»
     uint8_t fin = (data[0] & 0x80) >> 7; 
     // opcode Î»
     *opcode = data[0] & 0x0F;
-    // ¼ì²éÑÚÂëÎ»
+    // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Î»
     uint8_t mask = (data[1] & 0x80) >> 7;
-    // È¡³ö payload ³¤¶È£¬È¡µÚ¶þ¸ö×Ö½ÚµÄµÍ 7 Î»
+    // È¡ï¿½ï¿½ payload ï¿½ï¿½ï¿½È£ï¿½È¡ï¿½Ú¶ï¿½ï¿½ï¿½ï¿½Ö½ÚµÄµï¿½ 7 Î»
     uint64_t len = data[1] & 0x7F;
-    // ¶ÁÈ¡Î»ÖÃ£¬´ÓµÚÈý¸ö×Ö½Ú¿ªÊ¼
+    // ï¿½ï¿½È¡Î»ï¿½Ã£ï¿½ï¿½Óµï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö½Ú¿ï¿½Ê¼
     size_t pos = 2; 
 
     if (len == 126)
     {
-        // Èç¹û³¤¶ÈÎª 126£¬½ÓÏÂÀ´Á½¸ö×Ö½ÚÊÇÀ©Õ¹³¤¶È
+        // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Îª 126ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö½ï¿½ï¿½ï¿½ï¿½ï¿½Õ¹ï¿½ï¿½ï¿½ï¿½
         if (readableSize < 4)
         {
-            return -1; // Êý¾Ý²»×ã£¬ÎÞ·¨½âÎö
+            return -1; // ï¿½ï¿½ï¿½Ý²ï¿½ï¿½ã£¬ï¿½Þ·ï¿½ï¿½ï¿½ï¿½ï¿½
         }
-        // ¶ÁÈ¡À©Õ¹³¤¶È
+        // ï¿½ï¿½È¡ï¿½ï¿½Õ¹ï¿½ï¿½ï¿½ï¿½
         len = (data[2] << 8) | data[3]; 
-        // ¸üÐÂÎ»ÖÃ
+        // ï¿½ï¿½ï¿½ï¿½Î»ï¿½ï¿½
         pos += 2; 
     } 
     else if (len == 127)
     {
-        // Èç¹û³¤¶ÈÖµÊÇ 127£¬ÄÇÃ´½ÓÏÂÀ´ÊÇÒ»¸ö 8 ×Ö½ÚµÄÀ©Õ¹³¤¶È
+        // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Öµï¿½ï¿½ 127ï¿½ï¿½ï¿½ï¿½Ã´ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ò»ï¿½ï¿½ 8 ï¿½Ö½Úµï¿½ï¿½ï¿½Õ¹ï¿½ï¿½ï¿½ï¿½
         if (readableSize < 10)
         {
-            return -1; // Êý¾Ý²»×ã£¬ÎÞ·¨½âÎö
+            return -1; // ï¿½ï¿½ï¿½Ý²ï¿½ï¿½ã£¬ï¿½Þ·ï¿½ï¿½ï¿½ï¿½ï¿½
         }
         len = 0;
         for (int i = 0; i < 8; ++i)
         {
             len = (len << 8) | data[pos + i];
         }
-        // ¸üÐÂÎ»ÖÃ
+        // ï¿½ï¿½ï¿½ï¿½Î»ï¿½ï¿½
         pos += 8; 
     }
 
     uint8_t maskingKey[4] = { 0 };
     if (mask)
     {
-        // Èç¹ûÑÚÂëÎ»Îª 1£¬ÄÇÃ´½ÓÏÂÀ´µÄ 4 ×Ö½ÚÊÇÑÚÂë¼ü
+        // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Î»Îª 1ï¿½ï¿½ï¿½ï¿½Ã´ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ 4 ï¿½Ö½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
         if (readableSize < pos + 4)
         {
-            return 0; // Êý¾Ý²»×ã£¬ÎÞ·¨½âÎö
+            return 0; // ï¿½ï¿½ï¿½Ý²ï¿½ï¿½ã£¬ï¿½Þ·ï¿½ï¿½ï¿½ï¿½ï¿½
         }
-        // ¶ÁÈ¡ÑÚÂë¼ü
+        // ï¿½ï¿½È¡ï¿½ï¿½ï¿½ï¿½ï¿½
         memcpy(maskingKey, data + pos, 4);
         pos += 4;
     }
 
-    // ¼ì²éÊÇ·ñÓÐ×ã¹»µÄ¿Õ¼äÀ´´æ´¢ payload
+    // ï¿½ï¿½ï¿½ï¿½Ç·ï¿½ï¿½ï¿½ï¿½ã¹»ï¿½Ä¿Õ¼ï¿½ï¿½ï¿½ï¿½æ´¢ payload
     if (readableSize < pos + len)
     {
         printf("readableSize: %d, pos: %zu, len: %zu\n", readableSize, pos, len);
         printf("Not enough data to read payload, expected %zu bytes but only %d bytes available.\n", len, readableSize - pos);
-        return 0; // Êý¾Ý²»È«£¬²»×ö´¦Àí
+        return 0; // ï¿½ï¿½ï¿½Ý²ï¿½È«ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
     }
 
-    // ¶ÁÈ¡ payload Êý¾Ý
+    // ï¿½ï¿½È¡ payload ï¿½ï¿½ï¿½ï¿½
     if (payload && len > 0)
     {
         if (mask)
         {
-            // Èç¹ûÓÐÑÚÂë£¬ÄÇÃ´¾ÍÐèÒª¶ÔÊý¾Ý½øÐÐ½âÂë
+            // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ë£¬ï¿½ï¿½Ã´ï¿½ï¿½ï¿½ï¿½Òªï¿½ï¿½ï¿½ï¿½ï¿½Ý½ï¿½ï¿½Ð½ï¿½ï¿½ï¿½
             for (uint64_t i = 0; i < len; ++i)
             {
                 payload[i] = data[pos + i] ^ maskingKey[i % 4];
@@ -107,18 +107,18 @@ int parseWebSocketFrame(struct Buffer* readBuf, uint8_t* opcode, char* payload, 
         }
         else
         {
-            // Èç¹ûÃ»ÓÐÑÚÂë£¬ÄÇÃ´Ö±½Ó¸´ÖÆÊý¾Ý
+            // ï¿½ï¿½ï¿½Ã»ï¿½ï¿½ï¿½ï¿½ï¿½ë£¬ï¿½ï¿½Ã´Ö±ï¿½Ó¸ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
             memcpy(payload, data + pos, len);
         }
-        payload[len] = '\0'; // È·±£×Ö·û´®ÒÔ null ½áÎ²
+        payload[len] = '\0'; // È·ï¿½ï¿½ï¿½Ö·ï¿½ï¿½ï¿½ï¿½ï¿½ null ï¿½ï¿½Î²
     }
-    // ¸üÐÂ payload ³¤¶È
+    // ï¿½ï¿½ï¿½ï¿½ payload ï¿½ï¿½ï¿½ï¿½
     if (payloadLen)
     {
         *payloadLen = len;
     }
 
-    // ¸üÐÂ¶ÁÍ·Î»ÖÃ
+    // ï¿½ï¿½ï¿½Â¶ï¿½Í·Î»ï¿½ï¿½
     readBuf->readPos += pos + len;
     return (int)len;
 }
@@ -126,52 +126,52 @@ int parseWebSocketFrame(struct Buffer* readBuf, uint8_t* opcode, char* payload, 
 void sendWebSocketTextFrame(struct TcpConnection* conn, const char* msg)
 {
     size_t msgLen = strlen(msg);
-    // Éè¶¨·¢ËÍ¸ºÔØ 4 MB
+    // ï¿½è¶¨ï¿½ï¿½ï¿½Í¸ï¿½ï¿½ï¿½ 4 MB
     unsigned char frame[WS_MAX_HEADER_SIZE + 4194304];
-    // ²»´øÖ¡Í·
+    // ï¿½ï¿½ï¿½ï¿½Ö¡Í·
     //unsigned char frame[4194304];
 
-    // ÉèÖÃ FIN Î»ºÍ²Ù×÷Âë
+    // ï¿½ï¿½ï¿½ï¿½ FIN Î»ï¿½Í²ï¿½ï¿½ï¿½ï¿½ï¿½
     size_t pos = 0;
-    printf("Sending WebSocket text frame with message: %s\n", msg);
-    // FIN Î»Îª 1£¬±íÊ¾ÕâÊÇÒ»¸öÍêÕûµÄÏûÏ¢
-    // ²Ù×÷ÂëÎª 0x1£¬±íÊ¾ÕâÊÇÒ»¸öÎÄ±¾Ö¡
+    // printf("Sending WebSocket text frame with message: %s\n", msg);
+    // FIN Î»Îª 1ï¿½ï¿½ï¿½ï¿½Ê¾ï¿½ï¿½ï¿½ï¿½Ò»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ï¢
+    // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Îª 0x1ï¿½ï¿½ï¿½ï¿½Ê¾ï¿½ï¿½ï¿½ï¿½Ò»ï¿½ï¿½ï¿½Ä±ï¿½Ö¡
     frame[pos++] = 0x80 | WS_OPCODE_TEXT;
 
     if (msgLen <= 125)
     {
-        // Èç¹û payload ³¤¶ÈÐ¡ÓÚµÈÓÚ 125£¬ÄÇÃ´Ö±½ÓÊ¹ÓÃ 1 ×Ö½Ú±íÊ¾³¤¶È¼´¿É
+        // ï¿½ï¿½ï¿½ payload ï¿½ï¿½ï¿½ï¿½Ð¡ï¿½Úµï¿½ï¿½ï¿½ 125ï¿½ï¿½ï¿½ï¿½Ã´Ö±ï¿½ï¿½Ê¹ï¿½ï¿½ 1 ï¿½Ö½Ú±ï¿½Ê¾ï¿½ï¿½ï¿½È¼ï¿½ï¿½ï¿½
         frame[pos++] = (uint8_t)msgLen;
     }
     else if (msgLen <= 65535)
     {
-        frame[pos++] = 126; // Ê¹ÓÃ 126 ±íÊ¾½ÓÏÂÀ´ÊÇ 2 ×Ö½ÚµÄ³¤¶È
-        frame[pos++] = (msgLen >> 8) & 0xFF; // ¸ß×Ö½Ú
-        frame[pos++] = msgLen & 0xFF; // µÍ×Ö½Ú
+        frame[pos++] = 126; // Ê¹ï¿½ï¿½ 126 ï¿½ï¿½Ê¾ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ 2 ï¿½Ö½ÚµÄ³ï¿½ï¿½ï¿½
+        frame[pos++] = (msgLen >> 8) & 0xFF; // ï¿½ï¿½ï¿½Ö½ï¿½
+        frame[pos++] = msgLen & 0xFF; // ï¿½ï¿½ï¿½Ö½ï¿½
     }
     else
     {
-        frame[pos++] = 127; // Ê¹ÓÃ 127 ±íÊ¾½ÓÏÂÀ´ÊÇ 8 ×Ö½ÚµÄ³¤¶È
+        frame[pos++] = 127; // Ê¹ï¿½ï¿½ 127 ï¿½ï¿½Ê¾ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ 8 ï¿½Ö½ÚµÄ³ï¿½ï¿½ï¿½
         for (int i = 0; i < 8; ++i)
         {
-            // ÒÀÈ»ÊÇ´ó¶Ë×Ö½ÚÐò
-            // note£º´ó¶Ë×Ö½ÚÐòÊÇÖ¸¸ßÎ»×Ö½Ú´æ´¢ÔÚµÍµØÖ·£¬µÍÎ»×Ö½Ú´æ´¢ÔÚ¸ßµØÖ·
-            // ÍøÂç×Ö½ÚÐòÊÇ´ó¶Ë×Ö½ÚÐò
+            // ï¿½ï¿½È»ï¿½Ç´ï¿½ï¿½ï¿½Ö½ï¿½ï¿½ï¿½
+            // noteï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö½ï¿½ï¿½ï¿½ï¿½ï¿½Ö¸ï¿½ï¿½Î»ï¿½Ö½Ú´æ´¢ï¿½ÚµÍµï¿½Ö·ï¿½ï¿½ï¿½ï¿½Î»ï¿½Ö½Ú´æ´¢ï¿½Ú¸ßµï¿½Ö·
+            // ï¿½ï¿½ï¿½ï¿½ï¿½Ö½ï¿½ï¿½ï¿½ï¿½Ç´ï¿½ï¿½ï¿½Ö½ï¿½ï¿½ï¿½
             frame[pos++] = (msgLen >> (56 - i * 8)) & 0xFF;
         }
     }
-    printf("Sending WebSocket text frame with length: %zu\n", msgLen);
-    printf("frame length: %zu\n", sizeof(frame));
-    // È·±£ WebSocket Á¬½ÓµÄÐ´ÊÂ¼þ±»ÆôÓÃ
+    // printf("Sending WebSocket text frame with length: %zu\n", msgLen);
+    // printf("frame length: %zu\n", sizeof(frame));
+    // È·ï¿½ï¿½ WebSocket ï¿½ï¿½ï¿½Óµï¿½Ð´ï¿½Â¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
     writeEventEnable(conn->channel, true);
-    // Ìí¼Óµ½ÊÂ¼þÑ­»·µÄÈÎÎñ¶ÓÁÐÖÐ£¬µÈ´ý¹¤×÷Ïß³Ì´¦Àí
+    // ï¿½ï¿½ï¿½Óµï¿½ï¿½Â¼ï¿½Ñ­ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ð£ï¿½ï¿½È´ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ß³Ì´ï¿½ï¿½ï¿½
     eventLoopAddTask(conn->evLoop, conn->channel, MODIFY);
-    // Òª·¢ËÍµÄÊý¾Ý¿ÉÄÜ³¬¹ý 4110 ¸ö×Ö½Ú£¬ÈçºÎ½â¾ö£¿
+    // Òªï¿½ï¿½ï¿½Íµï¿½ï¿½ï¿½ï¿½Ý¿ï¿½ï¿½Ü³ï¿½ï¿½ï¿½ 4110 ï¿½ï¿½ï¿½Ö½Ú£ï¿½ï¿½ï¿½Î½ï¿½ï¿½ï¿½ï¿½
     memcpy(frame + pos, msg, msgLen);
-    // ¸üÐÂºó£¬pos ´ú±íÁËµ±Ç°Ö¡µÄ³¤¶È
+    // ï¿½ï¿½ï¿½Âºï¿½pos ï¿½ï¿½ï¿½ï¿½ï¿½Ëµï¿½Ç°Ö¡ï¿½Ä³ï¿½ï¿½ï¿½
     pos += msgLen;
 
-    // ·¢ËÍÊý¾ÝÐ´Èëµ½Ð´»º³åÇø
+    // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ð´ï¿½ëµ½Ð´ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
     bufferAppendData(conn->writeBuf, (char*)frame, pos);
 
 }

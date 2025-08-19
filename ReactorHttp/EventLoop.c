@@ -13,18 +13,15 @@ struct EventLoop* eventLoopInit()
     return eventLoopInitEx(NULL);
 }
 
-// д����
 void taskWakeUp(struct EventLoop* evLoop)
 {
-    const char* msg = "����Ҫ��Ϊ������������!!!";
+    const char* msg = "Task wakeup message!";
     write(evLoop->socketPair[0], msg, strlen(msg));
 }
 
-// ������
 int readLocalMessage(void* arg)
 {
     struct EventLoop* evLoop = (struct EventLoop*)arg;
-    // ���ڻ�������
     char buf[256];
     read(evLoop->socketPair[1], buf, sizeof(buf));
     return 0;
@@ -34,28 +31,21 @@ struct EventLoop* eventLoopInitEx(const char* threadName)
 {
     struct EventLoop* evLoop = (struct EventLoop*)malloc(sizeof(struct EventLoop));
     evLoop->isQuit = false;
-    // �ĸ��߳�ִ������� eventLoopInitEx �������õ����߳� ID ���Ƕ�Ӧ�̵߳� ID
     evLoop->threadID = pthread_self();
     pthread_mutex_init(&evLoop->mutex, NULL);
     strcpy(evLoop->threadName, threadName == NULL ? "MainThread" : threadName);
-    // ��Ĭ��ʹ��Ч�����ŵ� EpollDispatcher
     evLoop->dispatcher = &EpollDistatcher;
     evLoop->dispatcherData = evLoop->dispatcher->init();
-    // ����
     evLoop->head = evLoop->tail = NULL;
     // map
     evLoop->channelMap = channelMapInit(128);
-    // �̼߳���Ϣ���䣬ʹ�� AF_UNIX ���б����ڵ� UNIX �׽���ͨ�ż���
     int ret = socketpair(AF_UNIX, SOCK_STREAM, 0, evLoop->socketPair);
     if (ret == -1)
     {
         perror("socketpair");
         exit(0);
     }
-    // ָ������evLoop->socketPair[0] �������ݣ�evLoop->socketPair[1] ��������
-    // Ҳ����˵��socketPair[1] ��Ҫ�ŵ� select, poll, epoll �ļ�⼯����
     struct Channel* channel = channelInit(evLoop->socketPair[1], ReadEvent, readLocalMessage, NULL, NULL, evLoop);
-    // channel ���ӵ����������
     eventLoopAddTask(evLoop, channel, ADD);
     return evLoop;
 }
@@ -63,19 +53,14 @@ struct EventLoop* eventLoopInitEx(const char* threadName)
 int eventLoopRun(struct EventLoop* evLoop)
 {
     assert(evLoop != NULL);
-    // ȡ���¼��ַ��ͼ��ģ��
     struct Dispatcher* dispatcher = evLoop->dispatcher;
-    // �Ƚ��߳� ID �Ƿ���������������̣߳���Ҫִ�� Run ��������ֻ���������ӣ����������������������
     if (evLoop->threadID != pthread_self())
     {
         return -1;
     }
-    // ѭ�������¼�����
     while (!evLoop->isQuit)
     {
-        dispatcher->dispatch(evLoop, 2);                // ��ʱʱ�� 2s
-        // ֻ�����̻߳�ִ�е�������ڴ����¼���ͬʱ��Ҳ��Ҫ���κ��б�Ҫ��ʱ���������Լ���������е�����
-        //printf("Thread %s is processing events...\n", evLoop->threadName);
+        dispatcher->dispatch(evLoop, 2);                
         eventLoopProcessTask(evLoop);
     }
     return 0;
@@ -103,50 +88,52 @@ int eventActivate(struct EventLoop* evLoop, int fd, int event)
 
 int eventLoopAddTask(struct EventLoop* evLoop, struct Channel* channel, int type)
 {
-    // ����������������Դ
+    // 先获取锁
     pthread_mutex_lock(&evLoop->mutex);
-    // �����½ڵ�
+    // 创建新节点
     struct ChannelElement* node = (struct ChannelElement*)malloc(sizeof(struct ChannelElement));
     node->channel = channel;
     node->type = type;
     node->next = NULL;
-    // ����Ϊ��
+    // 添加到任务队列
     if (evLoop->head == NULL)
     {
         evLoop->head = evLoop->tail = node;
     }
     else
     {
-        evLoop->tail->next = node;          // ����
-        evLoop->tail = node;                // ����
+        evLoop->tail->next = node;          // 尾插
+        evLoop->tail = node;                // 尾指针指向新节点
     }
     pthread_mutex_unlock(&evLoop->mutex);
-    // �����ڵ�
+    // 唤醒线程
     /*
-     * ϸ�ڣ�
-     *  1. ���������ڵ�����ӣ������ǵ�ǰ�߳�Ҳ�����������̣߳����̣߳�
-     *      1). �޸� fd ���¼�����ǰ���̷߳��𣬵�ǰ���̴߳���
-     *      2). �����µ� fd����������ڵ�Ĳ����������̷߳����
-     *  2. ���������̴߳���������У���Ҫ�ɵ�ǰ�����߳�������
+     * 细节：
+     *  1. 如果当前线程是主线程，则直接在当前线程中执行任务
+     *      1). 修改 fd 事件后，当前线程也需要重新调度
+     *      2). 新增的 fd 需要在当前线程的调度中生效
+     *  2. 如果当前线程不是主线程，则需要唤醒主线程进行调度
     */
     if (evLoop->threadID == pthread_self())
     {
-        // ��ǰ���߳� -- ֱ�Ӵ�����������е���������
+        // 当前线程 -- 直接在当前线程中执行任务
         eventLoopProcessTask(evLoop);
     }
     else
     {
-        // ���߳�  -- ֪ͨ���̴߳�����������е�����
-        // 1. ���߳��ڹ��� 2. ���̱߳������ˣ�select, poll, epoll �е� timeout ����
-        // ��ν����� 2��
-        // �� select��poll��epoll ������Ӧ�ļ�⼯���ж�������һ�������ڷ������� "�����ļ�������"
-        // �����߳��������߳���������������еĽ���ʱ�򣬾�������ļ���������д�����ݼ���
-        // ���ֽ��������
+        // 其他线程  -- 通知主线程进行调度
+        // 1. 其他线程在睡眠 2. 其他线程被唤醒时，select, poll, epoll 等的 timeout 机制
+        // 唤醒机制 2
+        // 在 select、poll、epoll 等待的文件描述符中，有一个被写入的情况
+        // 其他线程在其他线程中被唤醒时，会将文件描述符的状态写入到对应的内存中
+        // 这样就可以唤醒其他线程
+        // 这里面有很多细节
         /*
-            1. pipe ���� ����Ҫ���ڽ��̼�ͨ�ţ�Ҳ�������̼߳�ͨ��
-            2. socket pair ���׽���ͨ�ţ�
+            1. pipe 机制 需要创建两个匿名管道，也就是需要两个线程之间的通信
+            2. socket pair 机制 也需要两个线程之间的通信
         */
-        // ���߳�Ĭ�����߳������������� taskWakeUp �����߳̽��� "����"
+        // 其他线程在其他线程中被唤醒时，会将文件描述符的状态写入到对应的内存中
+        // 这样就可以唤醒其他线程
         taskWakeUp(evLoop);
     }
     return 0;
@@ -154,38 +141,33 @@ int eventLoopAddTask(struct EventLoop* evLoop, struct Channel* channel, int type
 
 int eventLoopProcessTask(struct EventLoop* evLoop)
 {
-    // �����������������
     pthread_mutex_lock(&evLoop->mutex);
-    // ȡ��ͷ���
     struct ChannelElement* head = evLoop->head;
     while (head)
     {
         struct Channel* channel = head->channel;
         if (head->type == ADD)
         {
-            // ����
-            //printf("Adding channel with fd: %d\n", channel->fd);
+            // 添加
             eventLoopAdd(evLoop, channel);
         }
         else if (head->type == DELETE)
         {
-            // ɾ��
-            //printf("Removing channel with fd: %d\n", channel->fd);
+            // 删除
             eventLoopRemove(evLoop, channel);
         }
         else if (head->type == MODIFY)
         {
-            // �޸�
-            //printf("Modifying channel with fd: %d\n", channel->fd);
+            // 修改
             eventLoopModify(evLoop, channel);
         }
-        // ɾ��������ɵĽ��
+        // 释放已处理的节点
         struct ChannelElement* tmp = head;
         head = head->next;
         free(tmp);
         tmp = NULL;
     }
-    // ���������У��Ƿ���Ҫ����һ����ǰ�� while ѭ���У���
+    // 处理完毕后，清空任务队列
     evLoop->head = evLoop->tail = NULL;
     pthread_mutex_unlock(&evLoop->mutex);
     return 0;
@@ -197,18 +179,18 @@ int eventLoopAdd(struct EventLoop* evLoop, struct Channel* channel)
     struct ChannelMap* channelMap = evLoop->channelMap;
     if (fd >= channelMap->size)
     {
-        // channelMap ��û���㹻�Ŀռ����洢 fd - channel �ļ�ֵ��
-        // ��Ҫ����
-        // ����ʧ�ܵĻ���ֱ�ӷ��� -1
+        // channelMap 需要扩展以容纳 fd - channel 的映射
+        // 需要重新分配
+        // 分配失败的情况下直接返回 -1
         if (!makeMapRoom(channelMap, fd, sizeof(struct Channel*)))
         {
             return -1;
         }
     }
-    // �ҵ� fd ��Ӧ������Ԫ��λ�ã����洢
+    // 找到 fd 对应的通道
     if (channelMap->list[fd] == NULL)
     {
-        // �����λ�ã��ͽ��д洢
+        // 通道不存在，将通道添加到 dispatcher 中
         channelMap->list[fd] = channel;
         evLoop->dispatcher->add(channel, evLoop);
     }
@@ -221,8 +203,9 @@ int eventLoopRemove(struct EventLoop* evLoop, struct Channel* channel)
     struct ChannelMap* channelMap = evLoop->channelMap;
     if (fd >= channelMap->size)
     {
-        // Ҫɾ�����ļ���������û�洢�� channelMap �У�Ҳ�Ͳ��� dispatcher ���ļ�����
-        // ���ǲ������κ���
+        // 要删除的文件描述符在 channelMap 中并不存在
+        // 也就是说并没有对应的 dispatcher 处理这个文件描述符
+        // 这就意味着肯定是出错了
         return -1;
     }
     int ret = evLoop->dispatcher->remove(channel, evLoop);
@@ -235,8 +218,6 @@ int eventLoopModify(struct EventLoop* evLoop, struct Channel* channel)
     struct ChannelMap* channelMap = evLoop->channelMap;
     if (fd >= channelMap->size || channelMap->list[fd] == NULL)
     {
-        // Ҫɾ�����ļ���������û�洢�� channelMap �У�Ҳ�Ͳ��� dispatcher ���ļ�����
-        // ���ǲ������κ���
         return -1;
     }
     int ret = evLoop->dispatcher->modify(channel, evLoop);
@@ -245,12 +226,8 @@ int eventLoopModify(struct EventLoop* evLoop, struct Channel* channel)
 
 int destroyChannel(struct EventLoop* evLoop, struct Channel* channel)
 {
-    // ɾ�� channel �� fd �Ķ�Ӧ��ϵ
-    // ���ָ��
     evLoop->channelMap->list[channel->fd] = NULL;
-    // �ر��ļ�������
     close(channel->fd);
-    // �ͷ� channel �ڴ�
     free(channel);
     return 0;
 }

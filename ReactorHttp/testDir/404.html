@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>404 未找到 - ReactorServer</title>
+  <meta name="description" content="请求的页面未找到。返回主页或检查链接。">
+  <style>
+    :root{--bg:#0f1724;--card:#111827;--accent:#06b6d4;--muted:#94a3b8;--glass:rgba(255,255,255,0.03)}
+    html,body{height:100%;margin:0;font-family:Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial; background:linear-gradient(180deg,#071229 0%, #00121a 100%);color:#e6eef3}
+    .wrap{min-height:100%;display:flex;align-items:center;justify-content:center;padding:36px}
+    .card{width:100%;max-width:880px;background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));border-radius:12px;padding:36px;box-shadow:0 10px 30px rgba(2,6,23,0.6);backdrop-filter: blur(6px);border:1px solid rgba(255,255,255,0.03)}
+    .badge{display:inline-block;padding:6px 10px;border-radius:999px;background:var(--glass);color:var(--accent);font-weight:600;font-size:13px;margin-bottom:18px}
+    h1{font-size:36px;margin:0 0 8px;letter-spacing:-0.5px}
+    p.lead{margin:0 0 20px;color:var(--muted)}
+    .info{display:flex;gap:12px;flex-wrap:wrap;margin-top:18px}
+    .info .box{background:rgba(255,255,255,0.02);padding:12px 14px;border-radius:8px;color:#cfeff6;font-size:14px}
+    .actions{margin-top:22px;display:flex;gap:12px;flex-wrap:wrap}
+    .btn{display:inline-flex;align-items:center;gap:8px;padding:10px 14px;border-radius:8px;border:1px solid rgba(255,255,255,0.06);background:transparent;color:inherit;text-decoration:none;cursor:pointer}
+    .btn.primary{background:linear-gradient(90deg,var(--accent),#3b82f6);color:#062023;border:none}
+    .muted{color:var(--muted);font-size:13px}
+    footer{margin-top:18px;color:var(--muted);font-size:13px}
+    @media (max-width:640px){h1{font-size:28px}}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <main class="card" role="main">
+      <span class="badge">错误 404</span>
+      <h1>页面未找到</h1>
+      <p class="lead">您请求的资源不存在或已被移动。请检查 URL 是否正确，或返回主页继续浏览。</p>
+
+      <div class="info" aria-live="polite">
+        <div class="box">请求路径: <strong id="req-path">/</strong></div>
+        <div class="box">时间: <strong id="now">--:--:--</strong></div>
+        <div class="box">服务器: <strong>ReactorServer</strong></div>
+      </div>
+
+      <div class="actions">
+        <a class="btn primary" href="/">返回首页</a>
+        <button class="btn" id="go-back">后退</button>
+        <a class="btn" href="/">浏览站点地图</a>
+      </div>
+
+      <footer>
+        小提示: 如果这是视频或大文件的请求，请确认路径与 /testDir 中的文件名一致。
+      </footer>
+    </main>
+  </div>
+
+  <script>
+    (function(){
+      var p = document.getElementById('req-path');
+      p.textContent = window.location.pathname || '/';
+      var now = document.getElementById('now');
+      function updateTime(){
+        var d = new Date();
+        now.textContent = d.toLocaleString();
+      }
+      updateTime(); setInterval(updateTime, 1000);
+
+      document.getElementById('go-back').addEventListener('click', function(){
+        if(window.history.length>1) window.history.back(); else window.location='/';
+      });
+
+      // If served over an API that returns attempted path, prefer that (graceful degrade)
+      try{
+        if(window.__REQUESTED_PATH) p.textContent = window.__REQUESTED_PATH;
+      }catch(e){}
+    })();
+  </script>
+</body>
+</html>

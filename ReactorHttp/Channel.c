@@ -15,7 +15,6 @@ struct Channel* channelInit(int fd, int events, handleFunc readFunc, handleFunc 
 
 void writeEventEnable(struct Channel* channel, bool flag)
 {
-    // printf("Setting write event for fd %d to %s\n", channel->fd, flag ? "enabled" : "disabled");
     if (flag)
     {
         channel->events |= WriteEvent;
@@ -24,7 +23,6 @@ void writeEventEnable(struct Channel* channel, bool flag)
     {
         channel->events = channel->events & ~WriteEvent;
     }
-    // printf("Write event %s for fd %d\n", flag ? "enabled" : "disabled", channel->fd);
 }
 
 bool isWriteEventEnable(struct Channel* channel)

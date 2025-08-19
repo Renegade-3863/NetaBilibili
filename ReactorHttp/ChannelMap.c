@@ -33,19 +33,19 @@ bool makeMapRoom(struct ChannelMap* map, int newSize, int unitSize)
     if (map->size < newSize)
     {
         int curSize = map->size;
-        // ÈÝÁ¿Ã¿´ÎÀ©´óÔ­À´µÄÒ»±¶
+        // ï¿½ï¿½ï¿½ï¿½Ã¿ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ô­ï¿½ï¿½ï¿½ï¿½Ò»ï¿½ï¿½
         while (curSize < newSize)
         {
             curSize = curSize << 1;
         }
-        // À©ÈÝ realloc
+        // ï¿½ï¿½ï¿½ï¿½ realloc
         struct Channel** temp = realloc(map->list, curSize * unitSize);
         if (!temp)
         {
             return false;
         }
-        // realloc º¯Êý¿ÉÄÜ»áÐÞ¸Ä·ÖÅäµÄÄÚ´æµÄÊµ¼ÊÆðÊ¼µØÖ·£¬ËùÒÔ map->list µÄµØÖ·¿ÉÄÜ»á·¢Éú¸Ä±ä
-        // Ö»ÓÐÄÚ´æ·ÖÅä³É¹¦µÄÊ±ºò£¬ÎÒÃÇ²ÅÐÞ¸Ä map ÖÐ´æ´¢µÄÄÚ´æµØÖ·
+        // realloc ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ü»ï¿½ï¿½Þ¸Ä·ï¿½ï¿½ï¿½ï¿½ï¿½Ú´ï¿½ï¿½Êµï¿½ï¿½ï¿½ï¿½Ê¼ï¿½ï¿½Ö·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ map->list ï¿½Äµï¿½Ö·ï¿½ï¿½ï¿½Ü»á·¢ï¿½ï¿½ï¿½Ä±ï¿½
+        // Ö»ï¿½ï¿½ï¿½Ú´ï¿½ï¿½ï¿½ï¿½É¹ï¿½ï¿½ï¿½Ê±ï¿½ï¿½ï¿½ï¿½ï¿½Ç²ï¿½ï¿½Þ¸ï¿½ map ï¿½Ð´æ´¢ï¿½ï¿½ï¿½Ú´ï¿½ï¿½Ö·
         map->list = temp;
         
         memset(&map->list[map->size], 0, (curSize - map->size) * unitSize);

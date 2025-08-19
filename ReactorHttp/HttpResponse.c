@@ -39,6 +39,13 @@ void httpResponseDestroy(struct HttpResponse* response)
 {
     if (response)
     {
+        // Ensure any open file descriptor is closed to avoid leaking FDs
+        if (response->fileFd >= 0)
+        {
+            // printf("Closing file descriptor %d\n", response->fileFd);
+            close(response->fileFd);
+            response->fileFd = -1;
+        }
         free(response->headers);
         free(response);
     }
@@ -122,8 +129,6 @@ void httpResponsePrepareMsg(struct TcpConnection* conn, struct HttpResponse* res
     // 发送完毕后，检查文件描述符是否需要关闭
     if(response->fileFd < 0)
     {
-        // printf("File descriptor %d closed after sending\n", response->fileFd);
-
         // 文件发送完毕，可以关闭写事件监听
         writeEventEnable(conn->channel, false);
         eventLoopModify(conn->evLoop, conn->channel);
@@ -131,7 +136,7 @@ void httpResponsePrepareMsg(struct TcpConnection* conn, struct HttpResponse* res
 }
 
 void sendRangeRequestData(struct HttpResponse* response, struct Buffer* sendBuf, int socket)
-{
+{    
     int fd = response->fileFd;
     off_t* offset = &response->fileOffset;
     int* remaining = &response->fileLength;
@@ -142,6 +147,7 @@ void sendRangeRequestData(struct HttpResponse* response, struct Buffer* sendBuf,
         if (fd >= 0)
         {
             // 发送完成，关闭文件描述符
+            // printf("Closing file descriptor %d\n", fd);
             close(fd);
             // 可以把 response 对应的函数指针清空，防止重复调用
             response->sendRangeDataFunc = NULL;
@@ -173,9 +179,9 @@ void sendRangeRequestData(struct HttpResponse* response, struct Buffer* sendBuf,
             else
             {
                 // 其他错误，打印错误信息，关闭文件描述符，返回
-
-                perror("sendfile");
+                // printf("Closing file descriptor %d\n", fd);
                 close(fd);
+                perror("sendfile");
                 response->fileFd = -1;
                 *remaining = 0;
                 response->sendRangeDataFunc = NULL; // 清空函数指针
@@ -202,16 +208,9 @@ void sendRangeRequestData(struct HttpResponse* response, struct Buffer* sendBuf,
     // 如果发送完成，关闭文件描述符
     if(*remaining == 0 && fd >= 0)
     {
+        // printf("Closing file descriptor %d\n", fd);
         close(fd);
         response->fileFd = -1;
+        response->sendRangeDataFunc = NULL; // 清空函数指针
     }
 }
-
-// 使用 sendfile 发送完整的常规文件的函数
-// static void sendFileData(struct HttpResponse* response, struct Buffer* sendBuf, int socket)
-// {
-//     int fd = response->fileFd;
-//     off_t* offset = &response->fileOffset;
-//     int* remaining = &response->fileLength;
-    
-// }

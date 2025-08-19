@@ -48,10 +48,11 @@ struct HttpResponse
     int fileLength;
     // 用于 range request 的响应函数，如果不需要范围请求，则为 NULL
     responseRangeBody sendRangeDataFunc;
-
+    // 标记位，用于区分当前的 sendRangeDataFunc 是用于响应 Range Request 还是用于响应完整数据的请求
+    bool isRangeRequest;
 };
 
-// ��ʼ�� HttpResponse �ṹ��
+// 初始化 HttpResponse 结构体
 struct HttpResponse* httpResponseInit();
 // ���� HttpResponse 
 void httpResponseDestroy(struct HttpResponse* response);

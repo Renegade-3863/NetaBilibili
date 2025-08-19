@@ -107,8 +107,8 @@ static int acceptConnection(void *arg)
             perror("accept4");
             return -1;
         }
-        // 从线程池中取出一个线程的反应堆模型实例，来处理这个 cfd
         // printf("Accepted connection on fd: %d\n", cfd);
+        // 从线程池中取出一个线程的反应堆模型实例，来处理这个 cfd
         struct EventLoop *evLoop = takeWorkerEventLoop(server->threadPool);
         if (evLoop == NULL)
         {

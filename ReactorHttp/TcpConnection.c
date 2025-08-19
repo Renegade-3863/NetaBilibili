@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <errno.h>
+#include <unistd.h>
 #include "Log.h"
 
 static int processRead(void *arg)
@@ -9,8 +10,6 @@ static int processRead(void *arg)
     struct TcpConnection *conn = (struct TcpConnection *)arg;
 
     // 1. 处理 WebSocket 连接的逻辑
-    // Debug("���յ��� http �������ݣ�%s", conn->readBuf->data + conn->readBuf->readPos);
-    // ��� conn->isWebSocket Ϊ true����ô˵���� WebSocket ���ӣ����Ǿ�Ҫ�� WebSocket Э�������д���
     if (conn->isWebSocket)
     {
         uint8_t opcode = 0;
@@ -30,44 +29,35 @@ static int processRead(void *arg)
                 // ��� flag < 0�����������ݲ�������Ҳ�����ǽ����Ѿ����
                 break;
             }
-            // printf("Parsed WebSocket frame with opcode: %d, payload length: %zu\n", opcode, payloadLen);
             if (opcode == WS_OPCODE_TEXT)
             {
-                // ���� WebSocket �ı���Ϣ
-                // printf("Received WebSocket text message: %s\n", payload);
-                // ����
                 sendWebSocketTextFrame(conn, payload);
             }
             else if (opcode == WS_OPCODE_CLOSE)
             {
-                // �ͻ��˷����˹ر����ӵ� WebSocket ֡
-                // ���ӹر����ӵ�������������У��ȴ��̴߳���
-                // printf("Received WebSocket close frame, closing connection.\n");
                 eventLoopAddTask(conn->evLoop, conn->channel, DELETE);
-                printf("WebSocket connection closed.\n");
-                break; // �˳�ѭ��
+                // printf("WebSocket connection closed.\n");
+                break; // 退出循环
             }
-            // ��ʱ�������������͵� WebSocket ֡
+            // 处理完毕后，URL 应该是一个合法的路径
         }
-        // if (flag < 0)
-        //{
-        //     // ����ʧ�ܣ����������ݲ�����
-        //     return -1;
-        // }
-        //  ��� opcode �� WS_OPCODE_CLOSE����ô˵���ͻ��˷����˹ر����ӵ� WebSocket ֡
-        //  ���ǾͲ����ټ����������������
-        //  ֱ�ӷ��ؼ���
+        if (flag < 0)
+        {
+            // 解析失败，说明数据不完整
+            return -1;
+        }
+        //  说明 opcode == WS_OPCODE_CLOSE，表示客户端请求关闭 WebSocket 连接
+        //  直接关闭连接
         if (opcode == WS_OPCODE_CLOSE)
         {
             return 0;
         }
-        // ���򣬿ͻ��˷����� WebSocket ֡�Ѿ����������
+        // 处理完毕后，URL 应该是一个合法的路径
         return 0;
     }
 
     // 2. 处理常规 HTTP 连接的逻辑
     // printf("Process Read on fd %d\n", conn->response->statusCode);
-    // ��������
     // int count = bufferSocketRead(conn->readBuf, conn->channel->fd);
 
     // 循环读取，知道 EAGAIN / EWOULDBLOCK / error / peer close
@@ -103,7 +93,6 @@ static int processRead(void *arg)
     while (bufferReadableSize(conn->readBuf) > 0)
     {
 #ifdef MSG_SEND_AUTO
-        // �� eventLoop ����Ӧ�ļ���������д�¼�
         writeEventEnable(conn->channel, true);
         eventLoopAddTask(conn->evLoop, conn->channel, MODIFY);
 #endif
@@ -146,14 +135,12 @@ static int processRead(void *arg)
             continue;
         }
     }
-    // #ifndef MSG_SEND_AUTO
-    // if (!conn->isWebSocket)
-    // {
-    //     // �����һ�� HTTP ���ӣ���ô���۴����ɹ���񣬶�Ҫ��ͻ��˶Ͽ�����
-    //     // ��ɾ����Ӧ�ļ����������¼������񽻸�������У��ȴ��̴߳���
-    //     eventLoopAddTask(conn->evLoop, conn->channel, DELETE);
-    // }
-    // #endif
+// #ifndef MSG_SEND_AUTO
+//     if (!conn->isWebSocket)
+//     {
+//         eventLoopAddTask(conn->evLoop, conn->channel, DELETE);
+//     }
+// #endif
     return 0;
 }
 
@@ -186,7 +173,8 @@ static int processWrite(void *arg)
     }
 
     // 2) writeBuf 已空，若 response 指示有文件需要通过 sendfile 发送，继续使用 sendfile
-    if (conn->response && conn->response->fileFd >= 0)
+    // 同时当前响应的是一个 RangeRequest，就继续使用 sendfile 发送
+    if (conn->response && conn->response->isRangeRequest)
     {
         // 发送剩余的文件数据（处理 range/fileLength）
         off_t *offset = &conn->response->fileOffset;
@@ -201,14 +189,14 @@ static int processWrite(void *arg)
                 chunk = (size_t)remaining;
             }
             ssize_t sent = sendfile(conn->channel->fd, conn->response->fileFd, offset, chunk);
-            printf("Subsequent sending\n");
+            // printf("Subsequent sending\n");
             if (sent > 0)
             {
                 if (remaining > 0)
                 {
                     remaining -= sent;
                 }
-                printf("remaining: %ld\n", remaining);
+                // printf("remaining: %ld\n", remaining);
                 continue;
             }
             if (sent == 0)
@@ -235,36 +223,55 @@ static int processWrite(void *arg)
             {
                 // 出现错误，关闭连接
                 perror("sendfile");
+                close(conn->response->fileFd);
                 eventLoopAddTask(conn->evLoop, conn->channel, DELETE);
                 return -1;
             }
         }
         // 发送完毕：关闭文件描述符并标记为已完成
-        printf("closed after sending\n", conn->response->fileFd);
+        // printf("Closing file descriptor %d after sending range request\n", conn->response->fileFd);
         close(conn->response->fileFd);
         conn->response->fileFd = -1;
         conn->response->fileOffset = 0;
         conn->response->fileLength = 0;
     }
-    
-    // 如果先前有 sendFile 函數未发完的数据，在这里继续发
-    // if(conn->response && conn->response->sendDataFunc)
-    // {
-    //     // 再发送一次请求数据
-    //     conn->response->sendDataFunc(conn->response->fileName, conn->writeBuf, conn->channel->fd);
-    //     // 不进行后续处理，关闭写事件检测的检查再 sendDataFunc 中做
-    //     return 0;
-    // }
+
+    // 如果先前有 sendfile 函數未发完的完整文件的数据，在这里继续发
+    if (conn->response && conn->response->sendRangeDataFunc && !conn->response->isRangeRequest)
+    {
+        // 再发送一次请求数据
+        // printf("Sending\n");
+        conn->response->sendRangeDataFunc(conn->response, conn->writeBuf, conn->channel->fd);
+        // printf("Sending successful\n");
+        // 函数返回后，根据 response 中的数据，判断是否继续发送
+        if (conn->response->sendRangeDataFunc)
+        {
+            // 发送还未完成，我们不做处理，保证写事件激活即可
+            if (!isWriteEventEnable(conn->channel))
+            {
+                writeEventEnable(conn->channel, true);
+                eventLoopAddTask(conn->evLoop, conn->channel, MODIFY);
+            }
+        }
+        else
+        {
+            // 发送失败或者已发送完成，无论如何，我们都可以销毁连接
+            eventLoopAddTask(conn->evLoop, conn->channel, DELETE);
+            // 注销对应的 isRangeRequest 变量
+            conn->response->isRangeRequest = false;
+        }
+        return 0;
+    }
 
     // 3) 所有要发送的内容都已完成：取消写事件并根据类型决定是否删除连接
-    if(isWriteEventEnable(conn->channel))
+    if (isWriteEventEnable(conn->channel))
     {
         writeEventEnable(conn->channel, false);
         eventLoopAddTask(conn->evLoop, conn->channel, MODIFY);
     }
 
     // 4) 如果不是 WebSocket 连接，就直接断连即可
-    if(!conn->isWebSocket)
+    if (!conn->isWebSocket)
     {
         eventLoopAddTask(conn->evLoop, conn->channel, DELETE);
     }
@@ -281,11 +288,11 @@ struct TcpConnection *tcpConnectionInit(int fd, struct EventLoop *evLoop)
     conn->response = httpResponseInit();
     sprintf(conn->name, "Connection-%d", fd);
     conn->channel = channelInit(fd, ReadEvent, processRead, processWrite, tcpConnectionDestroy, conn);
-    // Ĭ�ϲ��� WebSocket ����
+    // 默认不是 WebSocket 连接
     conn->isWebSocket = false;
-    // �ѳ�ʼ�������� Channel ��Ӧ���ļ����������ӵ����������
+    // 将新建的连接添加到 eventLoop 中
     eventLoopAddTask(evLoop, conn->channel, ADD);
-    Debug("�Ϳͻ��˽������ӣ�threadName: %s, threadID:%s, connName: %s", evLoop->threadName, evLoop->threadID, conn->name);
+    Debug("新建连接: threadName: %s, threadID:%s, connName: %s", evLoop->threadName, evLoop->threadID, conn->name);
 
     return conn;
 }
@@ -306,6 +313,5 @@ int tcpConnectionDestroy(void *arg)
             free(conn);
         }
     }
-    // Debug("���ӶϿ����ͷ���Դ��gameover��connName: %s", conn->name);
     return 0;
 }

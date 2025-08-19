@@ -109,100 +109,6 @@ static char *splitRequestLine(char *start, char *end, const char *sub, char **pt
     return space + 1;
 }
 
-// bool parseHttpRequestLine(struct HttpRequest *request, struct Buffer *readBuf)
-// {
-//     // ���������У������ַ���������ַ
-//     char *end = bufferFindCRLF(readBuf); // \r\n
-//     // �����ַ�����ʼ��ַ
-//     char *start = readBuf->data + readBuf->readPos;
-//     // �������ܳ���
-//     int lineSize = end - start;
-
-//     if (lineSize)
-//     {
-//         start = splitRequestLine(start, end, " ", &request->method);
-//         printf("Method: %s\n", request->method);
-//         start = splitRequestLine(start, end, " ", &request->url);
-//         printf("URL: %s\n", request->url);
-//         splitRequestLine(start, end, NULL, &request->version);
-//         printf("Version: %s\n", request->version);
-// #if 0
-//         // get /xxx/xx.txt http/1.1
-//         // ���󷽷�
-//         char* space = memmem(start, lineSize, " ", 1);
-//         assert(space);
-//         int methodSize = space - start;
-//         request->method = (char*)malloc(methodSize+1);
-//         strncpy(request->method, start, methodSize);
-//         request->method[methodSize] = '\0';
-
-//         // ����� URL
-//         start = space + 1;
-//         space = memmem(start, end - start, " ", 1);
-//         assert(space);
-//         int urlSize = space - start;
-//         request->url = (char*)malloc(urlSize + 1);
-//         strncpy(request->url, start, urlSize);
-//         request->method[urlSize] = '\0';
-
-//         // ����� Http Э��汾
-//         start = space + 1;
-//         //space = memmem(start, end - start, " ", 1);
-//         //assert(space);
-//         //int urlSize = space - start;
-//         request->version = (char*)malloc(end - start + 1);
-//         strncpy(request->url, start, end-start);
-//         request->method[end-start] = '\0';
-// #endif
-
-//         // Ϊ��������ͷ��׼��
-//         readBuf->readPos += lineSize;
-//         readBuf->readPos += 2;
-//         // �޸Ľ���״̬
-//         request->curState = PS_HEADERS;
-//         // printf("Request Line: Method: %s, URL: %s, Version: %s\n", request->method, request->url, request->version);
-//         return true;
-//     }
-//     return false;
-// }
-
-// bool parseHttpRequestHeader(struct HttpRequest *request, struct Buffer *readBuf)
-// {
-//     char *end = bufferFindCRLF(readBuf);
-//     if (end)
-//     {
-//         char *start = readBuf->data + readBuf->readPos;
-//         int lineSize = end - start;
-//         // ������Ǳ�׼�� Http ���󣬲�Ҫ��ð�ź���Ŀո�
-//         char *middle = memmem(start, lineSize, ": ", 2);
-//         if (middle)
-//         {
-//             char *key = malloc(middle - start + 1);
-//             strncpy(key, start, middle - start);
-//             key[middle - start] = '\0';
-
-//             char *value = malloc(end - middle - 1);
-//             strncpy(value, middle + 2, end - middle - 2);
-//             value[end - middle - 2] = '\0';
-
-//             httpRequestAddHeader(request, key, value);
-//             // �ƶ������ݵ�λ��
-//             readBuf->readPos += lineSize;
-//             readBuf->readPos += 2;
-//         }
-//         else
-//         {
-//             // ����ͷ���������ˣ���������
-//             readBuf->readPos += 2;
-//             // �޸Ľ���״̬
-//             // ��ʱ���� Post ������ֻ���� Get ����
-//             request->curState = ParseReqDone;
-//         }
-//         return true;
-//     }
-//     return false;
-// }
-
 /**
  * @return PARSE_INCOMPLETE: 当前 缓冲中的数据不足以完成下一步，调用者保留缓冲区，不关闭连接，等待下次可读
  * @return PARSE_OK: 解析成功
@@ -298,7 +204,6 @@ ParseResult parseHttpRequest(struct TcpConnection *conn, struct HttpRequest *req
     char *hp = line_end + 2;
     while (hp < hdr_end)
     {
-        // printf("parseHttpRequest: Parsing header line: %.*s\n", (int)(hdr_end - hp), hp);
         // 找到下一行 header
         char *next_eol = memmem(hp, hdr_end - hp, "\r\n", 2);
         if (!next_eol)
@@ -385,7 +290,6 @@ ParseResult parseHttpRequest(struct TcpConnection *conn, struct HttpRequest *req
     */
     if (is_chunked)
     {
-        // printf("parseHttpRequest: Chunked transfer encoding detected\n");
         // 如果是分块的，那么按块对数据进行遍历
         int cur_pos = body_start_pos;
         while (1)
@@ -521,51 +425,16 @@ ParseResult parseHttpRequest(struct TcpConnection *conn, struct HttpRequest *req
     printf("parseHttpRequest: Unexpected state\n");
     return PARSE_ERROR;
 }
-// Old version of parseHttpRequest, no longer used
-// ParseResult parseHttpRequest(struct TcpConnection *conn, struct HttpRequest *request, struct Buffer *readBuf, struct HttpResponse *response, struct Buffer *sendBuf, int socket)
-// {
-//     bool flag = true;
-//     while (request->curState != ParseReqDone)
-//     {
-//         switch (request->curState)
-//         {
-//         case PS_REQLINE:
-//             flag = parseHttpRequestLine(request, readBuf);
-//             break;
-//         case PS_HEADERS:
-//             flag = parseHttpRequestHeader(request, readBuf);
-//             break;
-//         case PS_BODY:
-//             break;
-//         default:
-//             break;
-//         }
-//         if (!flag)
-//         {
-//             return flag;
-//         }
-//         // �ж��Ƿ��������ˣ��������ˣ���Ҫ׼���ظ�������
-//         if (request->curState == ParseReqDone)
-//         {
-//             // 1. ���ݽ�������ԭʼ���ݣ��Կͻ��˵�������������
-//             processHttpRequest(conn, request, response);
-//             // 2. ��֯��Ӧ���ݲ����͸��ͻ���
-//             httpResponsePrepareMsg(conn, response, sendBuf, socket);
-//         }
-//     }
-//     request->curState = PS_REQLINE; // ״̬��ԭ����֤�ܼ��������ڶ������Ժ������
-//     return flag;
-// }
 
 /*
-    ����һ�� static �Ľ��뺯�������ں����� Linux ���ļ�ϵͳ�д����ʱ��ᱻǿ������ת���� UTF-8 �����ʽ
-    ����������Ҫ�ڷ������˽��յ��ļ������������ֶ�ת��
+    这是一个 static 函数，用于将 Linux 文件系统中的字节流转换为 UTF-8 编码
+    主要用于处理上传的文件内容
 */
 
 /**
- * @param c 16 ���Ƶĵ����ַ�
+ * @param c 16 进制字符
  */
-// �� 16 ���Ƶ� UTF-8 �ַ�ת���� 10 ���Ƶ����ֵĺ���
+// 把 16 进制字符转换为 10 进制数字
 static int hexToDec(char c)
 {
     if (c >= '0' && c <= '9')
@@ -590,7 +459,6 @@ static void sendFilePartial(const char *filename, struct Buffer *sendBuf,
 {
     int fd = open(filename, O_RDONLY);
     assert(fd > 0);
-    printf("fd: %d\n", fd);
 
     off_t off = offset;
     int remaining = length;
@@ -625,45 +493,46 @@ static void sendFilePartial(const char *filename, struct Buffer *sendBuf,
     close(fd);
 }
 /**
- * @param to �������ַ���
- * @param from ����󡢽���ǰ���ַ���
+ * @param to 目标字符串
+ * @param from 源字符串
  */
-// ���뺯��
+// 解码函数
 void decodeMsg(char *to, char *from)
 {
-    // ����Ҫת�����ַ�����ֱ������ from �ַ����Ľ�β
+    // 逐个字符进行解码
     for (; *from != '\0'; ++to, ++from)
     {
-        // isxdigit ���������жϴ�����ַ��ǲ��� 16 ���Ƹ�ʽ������ȡֵΪ 0~9 a~f A~F
-        // �� UTF-8 ������ļ���������
+        // isxdigit 函数用于判断字符是否为16进制字符
+        // 将 UTF-8 编码的文件名进行解码
         // Linux%E5%86%85%E6%A0%B8.jpg
-        // ���� % ����������ַ��� 16 ���Ƶı���
+        // % 后面跟着 2 个 16 进制字符
         if (from[0] == '%' && isxdigit(from[1]) && isxdigit(from[2]))
         {
-            // ������������������˵�� from ��ǰ�����ַ�������һ�� UTF-8 ������ַ�
-            // ������Ҫ�������ת��
+            // % 后面跟着 2 个 16 进制字符，说明 from 当前指向的字符串是一个 UTF-8 编码的字符串
+            // 需要将其转换为 10 进制数字
             *to = hexToDec(from[1]) * 16 + hexToDec(from[2]);
 
-            // ת����ɺ�to ָ���ָ���� from ԭ��ָ��� UTF-8 ����ʵ�ʶ�Ӧ���ַ�ֵ��10 ���ƣ�
-            // Ϊ��ͳһ���� for ѭ���������� ++from ���߼�����������ֻ�� from ���ƶ� 2 ���ֽ�
+            // 转换为 10 进制数字后，将其赋值给 to 指向的字符
+            // 然后将 to 指针和 from 指针都向后移动 2 个位置
+            // 因为 % 后面跟着 2 个 16 进制字符，所以需要移动 2 个位置
             from += 2;
         }
         else
         {
-            // ����˵�� from ��ǰ�����ַ����������� ASCII �ַ�
-            // ����ֱ�ӿ�������
+            // 否则，说明 from 当前指向的字符是一个 ASCII 字符
+            // 直接将其赋值给 to 指向的字符
             *to = *from;
         }
     }
-    // �ض��ַ�������ֹ��ȡ�����������
+    // 最后，在目标字符串的末尾添加一个 '\0' 字符，作为字符串的结束标志
     *to = '\0';
 }
 
 const char *getFileType(const char *name)
 {
     // a.jpg a.mp4 a.html
-    // ����������� '.' �ַ����粻���ڷ��� NULL
-    // �������󣬷�ֹ�ļ��������Ͱ������
+    // 查找最后一个 '.' 字符的位置
+    // 如果找不到，说明是普通文件，默认返回 text/plain
     const char *dot = strrchr(name, '.');
     if (dot == NULL)
         return "text/plain; charset=utf-8"; // ���ı�
@@ -710,31 +579,30 @@ const char *getFileType(const char *name)
     return "text/plain; charset=utf-8";
 }
 
+// 这个函数仅用于测试目录文档，实际使用中应该不会用到
 void sendDir(const char *dirName, struct Buffer *sendBuf, int cfd)
 {
-    // printf("Sending directory: %s\n", dirName);
     char buf[4096] = {0};
-    // ƴ�� html �ļ��� head �ֶ�
+    // 构造 html 文件的 head 部分
     sprintf(buf, "<html><head><title>%s</title></head><body><table>", dirName);
     struct dirent **namelist;
-    // ����Ҫ����ɸѡ���򣬵���������ָ��Ϊ NULL
-    // ɨ��Ŀ¼��˳����ѭ Linux �Զ���� alphasort ��ʽ�����ļ�����ĸ˳���ģʽ
+    // 这里需要进行过滤，防止出现 NULL
+    // 遍历目录时默认使用 alphasort 形式对文件进行字母排序
     int num = scandir(dirName, &namelist, NULL, alphasort);
     for (int i = 0; i < num; ++i)
     {
-        // ȡ��һ���ļ���
-        // ���� namelist ָ�����һ��ָ������ struct dirent *tmp
+        // 取出一个文件名
+        // 通过 namelist 指向的一个指针变量 struct dirent *tmp
         char *name = namelist[i]->d_name;
-        // �ж�ȡ������ name ��������һ����С����Ŀ¼������һ���������ļ�
+        // 判断当前文件名是否为一个目录或一个普通文件
         struct stat st;
         char subPath[1024] = {0};
         sprintf(subPath, "%s/%s", dirName, name);
         stat(subPath, &st);
-        // printf("\nSubpath is: %s", subPath);
         if (S_ISDIR(st.st_mode))
         {
-            // �������ӣ�ʹ�� <a></a> ��ǩ
-            // �﷨Ϊ <a href="">name</a>
+            // 如果是目录，则使用 <a></a> 标签
+            // 结构为 <a href="">name</a>
             sprintf(buf + strlen(buf),
                     "<tr><td><a href=\"%s/\">%s</a></td><td>%ld</td></tr>",
                     name, name, st.st_size);
@@ -748,12 +616,12 @@ void sendDir(const char *dirName, struct Buffer *sendBuf, int cfd)
         // send(cfd, buf, strlen(buf), 0);
         bufferAppendString(sendBuf, buf);
 #ifndef MSG_SEND_AUTO
-        // дһ���֣��ͷ�һ����
+        // 写一点，就发送一点
         bufferSendData(sendBuf, cfd);
 #endif
-        // ��շ��ͻ���
+        // 清空缓冲区
         memset(buf, 0, sizeof(buf));
-        // �ڴ�����
+        // 释放内存
         free(namelist[i]);
     }
     sprintf(buf, "</table></body></html>");
@@ -762,17 +630,17 @@ void sendDir(const char *dirName, struct Buffer *sendBuf, int cfd)
     // дһ���֣��ͷ�һ����
     bufferSendData(sendBuf, cfd);
 #endif
-    // ��������ָ��
+    // 释放内存
     free(namelist);
 }
 
+// 目前这个函数只用于发送 404.html，其它较大文件使用 sendRangeRequestData 来做
+// 由于循环发送的方式太过低效，后面可能会考虑删掉
 void sendFile(const char *filename, struct Buffer *sendBuf, int cfd)
 {
-    // 1. ��Ҫ������ļ�
-    // ��ֻ����ʽ�򿪣���ֹ�ļ������޸�
-    // printf("filename: %s\n", filename);
+    // 打开文件
     int fd = open(filename, O_RDONLY);
-    // ʹ�ö����ж��ļ��Ƿ�򿪳ɹ�
+    // 打开失败
     if (fd <= 0)
     {
         perror("open");
@@ -781,7 +649,8 @@ void sendFile(const char *filename, struct Buffer *sendBuf, int cfd)
 #if 1
     while (1)
     {
-        char buf[102400];
+        // 后续可能会调整
+        char buf[1024];
         int len = read(fd, buf, sizeof(buf));
         if (len > 0)
         {
@@ -802,7 +671,7 @@ void sendFile(const char *filename, struct Buffer *sendBuf, int cfd)
         }
         else if (len == 0)
         {
-            // ��ȡ�Ѿ���ɣ������˳�ѭ��
+            // 读取完毕，退出循环
             break;
         }
         else
@@ -843,10 +712,10 @@ void sendFile(const char *filename, struct Buffer *sendBuf, int cfd)
     close(fd);
 }
 
-// �ж�һ�� Http �����Ƿ�Ϊ WebSocket ��������
+// 判断一个 HTTP 请求是否是 WebSocket 握手请求
 static bool isWebSocketHandshake(struct HttpRequest *request)
 {
-    // 1. ����Ƿ�Ϊ WebSocket ��������
+    // 1. 检查是否为 WebSocket 握手请求
     const char *upgrade = httpRequestGetHeader(request, "Upgrade");
     const char *connection = httpRequestGetHeader(request, "Connection");
     const char *ws_key = httpRequestGetHeader(request, "Sec-WebSocket-Key");
@@ -856,11 +725,11 @@ static bool isWebSocketHandshake(struct HttpRequest *request)
         connection && strcasecmp(connection, "Upgrade") == 0 &&
         ws_key && ws_version && strcmp(ws_version, "13") == 0)
     {
-        // ˵����һ�� WebSocket ��������
-        // ���� true ����
+        // 表示这是一个 WebSocket 握手请求
+        // 返回 true
         return true;
     }
-    // ����˵������ WebSocket ��������
+    // 否则表示不是 WebSocket 握手请求
     return false;
 }
 
@@ -869,9 +738,9 @@ static int base64Encode(const unsigned char *input, int inputLen, char *output)
     BIO *bmem = NULL, *b64 = NULL;
     BUF_MEM *bptr = NULL;
 
-    // ����һ���ڴ� BIO ����
+    // 创建一个内存 BIO
     b64 = BIO_new(BIO_f_base64());
-    // ������
+    // 关闭换行符
     BIO_set_flags(b64, BIO_FLAGS_BASE64_NO_NL);
     bmem = BIO_new(BIO_s_mem());
     b64 = BIO_push(b64, bmem);
@@ -887,49 +756,49 @@ static int base64Encode(const unsigned char *input, int inputLen, char *output)
     return bptr->length;
 }
 
-// ���� WebSocket ��������
+// 处理 WebSocket 握手请求
 static bool handleWebSocketHandshake(struct HttpRequest *request, struct HttpResponse *response)
 {
     const char *ws_key = httpRequestGetHeader(request, "Sec-WebSocket-Key");
     if (!ws_key)
     {
-        // ���û�� Sec-WebSocket-Key ͷ����˵������һ���Ϸ��� WebSocket ��������
+        // 缺少 Sec-WebSocket-Key 头部，说明不是一个合法的 WebSocket 握手请求
         return false;
     }
-    // �ǺϷ��� WebSocket ��������
-    // ���� Sec-WebSocket-Accept ��Ӧͷ
-    // ƴ�� GUID
+    // 是一个合法的 WebSocket 握手请求
+    // 添加 Sec-WebSocket-Accept 响应头
+    // 拼接 GUID
     char acceptKey[128] = {0};
     snprintf(acceptKey, sizeof(acceptKey), "%s%s", ws_key, WEBSOCKET_GUID);
 
-    // ��ƴ�Ӻ���ַ������� SHA-1 ��ϣ����
+    // 进行 SHA-1 计算（为什么不能用 SHA-256?）
     unsigned char hash[SHA_DIGEST_LENGTH] = {0};
-    // ʹ�� SHA-1 ��ϣ�㷨�����ϣֵ
+    // 采用 SHA-1 算法对拼接后的字符串进行哈希
     SHA1((unsigned char *)acceptKey, strlen(acceptKey), hash);
 
-    // �Թ�ϣֵ���� Base64 ����
+    // 将哈希值进行 Base64 编码
     char base64Hash[128] = {0};
     int base64Len = base64Encode(hash, SHA_DIGEST_LENGTH, base64Hash);
     (void)base64Len;
 
-    // ֮��������Ҫ�� Base64 �������ַ������ӵ���Ӧͷ��
+    // 将 Base64 编码后的字符串添加到响应头中
     response->statusCode = SwitchingProtocols;
     strcpy(response->statusMsg, "Switching Protocols");
-    // ���� Sec-WebSocket-Accept ��Ӧͷ
+    // 添加 Sec-WebSocket-Accept 响应头
     httpResponseAddHeader(response, "Sec-WebSocket-Accept", base64Hash);
-    // ���� Upgrade ��Ӧͷ
+    // 添加 Upgrade 响应头
     httpResponseAddHeader(response, "Upgrade", "websocket");
-    // ���� Connection ��Ӧͷ
+    // 添加 Connection 响应头
     httpResponseAddHeader(response, "Connection", "Upgrade");
-    // ���� Sec-WebSocket-Version ��Ӧͷ
+    // 添加 Sec-WebSocket-Version 响应头
     httpResponseAddHeader(response, "Sec-WebSocket-Version", "13");
-    // ���� Sec-WebSocket-Protocol ��Ӧͷ
+    // 添加 Sec-WebSocket-Protocol 响应头
     // httpResponseAddHeader(response, "Sec-WebSocket-Protocol", "chat");
-    // ������Ӧͷ
+    // 返回成功
     return true;
 }
 
-// ������Ŀǰ�ǻ��� get �ģ�Http ������� WebSocket ��������
+// 处理 HTTP 请求
 bool processHttpRequest(struct TcpConnection *conn, struct HttpRequest *request, struct HttpResponse *response)
 {
     // 清除已有的 headers，防止重复头问题
@@ -942,8 +811,8 @@ bool processHttpRequest(struct TcpConnection *conn, struct HttpRequest *request,
     response->fileLength = 0;
     if (isWebSocketHandshake(request))
     {
-        // ˵����һ�� WebSocket ��������
-        // �Ժ���һ������������ WebSocket ��������
+        // 处理 WebSocket 握手请求
+        // 返回一个合法的 WebSocket 握手响应
         bool flag = handleWebSocketHandshake(request, response);
         if (!flag)
         {
@@ -951,45 +820,48 @@ bool processHttpRequest(struct TcpConnection *conn, struct HttpRequest *request,
             strcpy(response->statusMsg, "Bad Request");
             return false;
         }
-        // ������ɺ󣬰Ѷ�Ӧ�� connection ����Ϊ WebSocket ����
+        // 处理 WebSocket 握手请求成功
+        // 标记连接为 WebSocket 连接
         conn->isWebSocket = true;
         return true;
     }
     if (strcasecmp(request->method, "get") != 0)
     {
         // 说明不是 GET 请求
-        // ˵������ GET
+        // 处理非 GET 请求
         return false;
     }
-    // ת�������������ļ���
-    // ֮���Կ����Ե��ã�����Ϊ���뺯���У�to ָ��ָ������λ��һ��һֱ�� from ָ��ǰ��
+    // 处理 URL 解码
+    // 先将 URL 中的 %XX 解码为对应的字符，然后将 + 替换为空格
     decodeMsg(request->url, request->url);
-    // ����˵���յ���һ�� GET ����
-    // ���Ǵ����ͻ���Ҫ��ľ�̬��Դ��Ŀ¼/�ļ���
+    // 处理完毕后，URL 应该是一个合法的路径
+    // 现在我们需要查找静态资源的路径/文件名
     char *file = NULL;
-    // �޸�·�����������ʹ��Ŀ¼·��
+    // 修改路径，确保使用相对路径
     if (strcmp(request->url, "/") == 0)
     {
         file = "./";
     }
     else
     {
-        // ָ�����һ���ֽڣ�������ͷ�� "/" ����
+        // 处理成一个合法的路径，确保以 "/" 开头
         file = request->url + 1;
     }
-    // ��ȡ�ļ�����
-    // ����ṹ�嶨���� <sys/stat.h> ��
+    // 获取文件信息
+    // 需要包含头文件 <sys/stat.h>
     struct stat st;
     int ret = stat(file, &st);
     if (ret == -1)
     {
-        // ��ȡ�ļ�������Ϣ�����ڣ�Ҳ��˵���ļ������Ͳ�����
-        // ��ô������Ҫ����һ�� 404 ����
+        // 获取文件信息失败，说明文件不存在
+        // 需要返回一个 404 响应
         strcpy(response->fileName, "404.html");
         response->statusCode = NotFound;
         strcpy(response->statusMsg, "Not Found");
-        // �����Ӧͷ
+        // 添加响应头
         httpResponseAddHeader(response, "Content-type", getFileType(".html"));
+        // 明确告知客户端自己要断开连接
+        httpResponseAddHeader(response, "Connection", "close");
         response->sendDataFunc = sendFile;
         return 0;
     }
@@ -1000,13 +872,13 @@ bool processHttpRequest(struct TcpConnection *conn, struct HttpRequest *request,
     // �ж��ļ�����
     if (S_ISDIR(st.st_mode))
     {
-        // printf("\n\n\n\n\n\nThis is a directory!!\n\n\n\n\n\n");
-        //  ˵����һ��Ŀ¼
-        //  ��ô���ǰ����Ŀ¼�е����ݷ������ͻ���
-        //  �����Ӧͷ
+        // 说明这是一个目录
+        // 这样可以将当前目录下的文件列表返回给客户端
+        // 添加响应头
+        // 这部分后续需要考虑改用 chunk 分块发送，不然客户端会因为不知道请求体长度而循环等待
         httpResponseAddHeader(response, "Content-type", getFileType(".html"));
+        httpResponseAddHeader(response, "Connection", "close");
         response->sendDataFunc = sendDir;
-        // printf("The address of sendDir is %p\n", sendDir);
     }
     else
     {
@@ -1018,8 +890,6 @@ bool processHttpRequest(struct TcpConnection *conn, struct HttpRequest *request,
             int start = 0, end = 0;
             if (sscanf(rangeHeader, "bytes=%d-%d", &start, &end) >= 1)
             {
-                // printf("Parsed Range: %d-%d\n", start, end);
-
                 // 解析成功，我们可以进一步判断
                 if (end == 0 || end >= st.st_size)
                 {
@@ -1046,17 +916,22 @@ bool processHttpRequest(struct TcpConnection *conn, struct HttpRequest *request,
                 char contentLengthStr[32];
                 sprintf(contentLengthStr, "%d", contentLength);
                 httpResponseAddHeader(response, "Content-Length", contentLengthStr);
+                // 显式告知客户端 keep-alive
+                httpResponseAddHeader(response, "Connection", "keep-alive");
+                // 明确指定连接超时时间
+                httpResponseAddHeader(response, "Keep-Alive", "timeout=5, max=100");
 
                 // 设置 Content-Type 头（Range 响应也需要 Content-Type，浏览器用于识别媒体类型）
-                // httpResponseAddHeader(response, "Content-Type", getFileType(file));
+                httpResponseAddHeader(response, "Content-Type", getFileType(file));
 
                 // 打开写事件监听
                 writeEventEnable(conn->channel, true);
                 eventLoopModify(conn->evLoop, conn->channel);
                 response->fileOffset = start;
-                // 对于这种较大的文件，似乎可以尝试先默认只发送 5 MB?
                 response->fileLength = contentLength;
                 response->fileFd = open(file, O_RDONLY);
+                // printf("send partial: Opening a new file descriptor %d!\n", response->fileFd);
+                response->isRangeRequest = true;
 
                 response->sendRangeDataFunc = sendRangeRequestData;
 
@@ -1070,29 +945,23 @@ bool processHttpRequest(struct TcpConnection *conn, struct HttpRequest *request,
         httpResponseAddHeader(response, "Content-type", getFileType(file));
         // printf("Got contenttype: %s\n", getFileType(file));
         httpResponseAddHeader(response, "Content-length", tmp);
-        // 添加一条分支：如果要发送的文件本身很大，同时是视频文件，不适合一次性读入内存并发送，就换用 sendfile 进行发送
-        // if (st.st_size > 1024 * 1024 && strcmp(getFileType(file), "video/mp4") == 0)
-        // {
-        //     // 设定 sendRangeDataFunc，告诉服务器使用范围发送，也就是 sendfile
-        //     response->sendRangeDataFunc = sendRangeRequestData;
-
-        //     // 因为请求的是完整的文件，所以起始位置为第一个字节
-        //     response->fileOffset = 0;
-        //     response->fileLength = MAX_FILE_SIZE;
-        //     // response->fileLength = st.st_size;
-        //     response->fileFd = open(file, O_RDONLY);
-
-        //     return true;
-        // }
-        // 小于 1MB 的文件，就使用 send 简单发送
-        // printf("\n\n\n\n\n\nThis is a File!!\n\n\n\n\n\n");
-        //  ˵����һ���ļ�
-        //  ��ô���ǰ�����ļ������ݷ������ͻ���
-        //  �����Ӧͷ
+        // 显式告知客户端 keep-alive
+        httpResponseAddHeader(response, "Connection", "keep-alive");
+        // 明确指定连接超时时间
+        httpResponseAddHeader(response, "Keep-Alive", "timeout=5, max=100");
         // 打开写事件监听
         writeEventEnable(conn->channel, true);
         eventLoopModify(conn->evLoop, conn->channel);
-        response->sendDataFunc = sendFile;
+        response->fileOffset = 0;
+        response->fileLength = st.st_size;
+        // lazy open
+        response->fileFd = open(file, O_RDONLY);
+        // printf("send complete: Opening a new file descriptor %d!\n", response->fileFd);
+
+        // 标记这是一个完整的文件请求，而不是 Range Request
+        // 不过我们也复用 sendRangeRequestData 来发送静态文件数据
+        response->isRangeRequest = false;
+        response->sendRangeDataFunc = sendRangeRequestData;
     }
 
     return true;

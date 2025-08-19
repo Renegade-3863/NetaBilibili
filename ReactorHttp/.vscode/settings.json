@@ -23,6 +23,18 @@
         "type_traits": "c",
         "typeinfo": "c",
         "limits": "c",
-        "sendfile.h": "c"
+        "sendfile.h": "c",
+        "httprequest.h": "c",
+        "atomic": "c",
+        "deque": "c",
+        "unordered_map": "c",
+        "vector": "c",
+        "stdio.h": "c",
+        "stdint.h": "c",
+        "optional": "c",
+        "algorithm": "c",
+        "array": "c",
+        "concepts": "c",
+        "stdexcept": "c"
     }
 }
