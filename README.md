@@ -21,6 +21,6 @@
 
 ``` bash
     # git 克隆项目，之后 cd 到 NetaBilibili 目录下
-    # 之后直接运行下面一行代码，之后访问 http://localhost:8080 即可
+    # 之后直接运行下面一行代码，之后访问 http://localhost:8080/index.html 即可
     docker-compose -f docker-compose.dev.yml up --build
 ```
