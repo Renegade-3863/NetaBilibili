@@ -20,8 +20,8 @@ int main(int argc, char* argv[])
     signal(SIGPIPE, SIG_IGN);
 
     // 启动服务器实例
-    struct TcpServer* server = tcpServerInit(port, 2000);
-    //printf("TCP Server Thread Pool: %d\n", server->threadPool->isStart);
+    struct TcpServer* server = tcpServerInit(port, 32);
+    printf("TCP Server Thread Pool: %d\n", server->threadPool->isStart);
     tcpServerRun(server);
 
 

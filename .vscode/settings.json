@@ -1,6 +1,15 @@
 {
     "cmake.sourceDirectory": "/home/hzouaf/task/Reactor/NetaBilibili/ReactorHttp",
     "files.associations": {
-        "sendfile.h": "c"
+        "sendfile.h": "c",
+        "array": "c",
+        "string_view": "c",
+        "initializer_list": "c",
+        "httprequest.h": "c",
+        "tcpconnection.h": "c",
+        "stdio.h": "c",
+        "types.h": "c",
+        "httpresponse.h": "c",
+        "random": "c"
     }
 }
