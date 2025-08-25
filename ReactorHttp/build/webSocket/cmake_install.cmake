@@ -1,4 +1,4 @@
-# Install script for directory: /home/hzouaf/task/prev/NetaBilibili/ReactorHttp/webSocket
+# Install script for directory: /app/webSocket
 
 # Set the install prefix
 if(NOT DEFINED CMAKE_INSTALL_PREFIX)

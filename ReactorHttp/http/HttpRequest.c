@@ -166,8 +166,8 @@ static void append_video_to_videos_json(const char *filename, const char *url_pa
             break;
     }
 
-    // 构造下载链接
-    const char *dl_prefix = "http://localhost:8080/upload/";
+    // 构造下载链接（直接指向可被静态服务器访问到的路径）
+    const char *dl_prefix = "http://localhost:8080/static/uploads/";
     size_t dl_len = strlen(dl_prefix) + strlen(filename) + 1;
     char *download_url = (char *)malloc(dl_len);
     if (!download_url)

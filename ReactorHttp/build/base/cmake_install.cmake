@@ -1,4 +1,4 @@
-# Install script for directory: /home/hzouaf/task/prev/NetaBilibili/ReactorHttp/base
+# Install script for directory: /app/base
 
 # Set the install prefix
 if(NOT DEFINED CMAKE_INSTALL_PREFIX)

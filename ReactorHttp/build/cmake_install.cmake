@@ -1,4 +1,4 @@
-# Install script for directory: /home/hzouaf/task/prev/NetaBilibili/ReactorHttp
+# Install script for directory: /app
 
 # Set the install prefix
 if(NOT DEFINED CMAKE_INSTALL_PREFIX)
@@ -44,10 +44,10 @@ endif()
 
 if(NOT CMAKE_INSTALL_LOCAL_ONLY)
   # Include the install script for each subdirectory.
-  include("/home/hzouaf/task/prev/NetaBilibili/ReactorHttp/build/base/cmake_install.cmake")
-  include("/home/hzouaf/task/prev/NetaBilibili/ReactorHttp/build/tcp/cmake_install.cmake")
-  include("/home/hzouaf/task/prev/NetaBilibili/ReactorHttp/build/http/cmake_install.cmake")
-  include("/home/hzouaf/task/prev/NetaBilibili/ReactorHttp/build/webSocket/cmake_install.cmake")
+  include("/app/build/base/cmake_install.cmake")
+  include("/app/build/tcp/cmake_install.cmake")
+  include("/app/build/http/cmake_install.cmake")
+  include("/app/build/webSocket/cmake_install.cmake")
 
 endif()
 
@@ -59,5 +59,5 @@ endif()
 
 string(REPLACE ";" "\n" CMAKE_INSTALL_MANIFEST_CONTENT
        "${CMAKE_INSTALL_MANIFEST_FILES}")
-file(WRITE "/home/hzouaf/task/prev/NetaBilibili/ReactorHttp/build/${CMAKE_INSTALL_MANIFEST}"
+file(WRITE "/app/build/${CMAKE_INSTALL_MANIFEST}"
      "${CMAKE_INSTALL_MANIFEST_CONTENT}")
