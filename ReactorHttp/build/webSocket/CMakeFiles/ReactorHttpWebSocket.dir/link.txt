@@ -1,2 +1,0 @@
-/usr/bin/ar qc libReactorHttpWebSocket.a CMakeFiles/ReactorHttpWebSocket.dir/WebSocket.c.o
-/usr/bin/ranlib libReactorHttpWebSocket.a

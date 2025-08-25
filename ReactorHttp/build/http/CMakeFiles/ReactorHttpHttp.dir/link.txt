@@ -1,2 +1,0 @@
-/usr/bin/ar qc libReactorHttpHttp.a CMakeFiles/ReactorHttpHttp.dir/HttpRequest.c.o CMakeFiles/ReactorHttpHttp.dir/HttpResponse.c.o
-/usr/bin/ranlib libReactorHttpHttp.a
