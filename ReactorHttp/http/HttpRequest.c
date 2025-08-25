@@ -19,8 +19,8 @@
 #include <openssl/evp.h>
 #include <openssl/buffer.h>
 
+// 最多允许 20 个 header 字段
 #define HeaderSize 20
-#define MAX_FILE_SIZE (5 * 1024 * 1024) // 5MB
 #define WEBSOCKET_GUID "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
 
 struct HttpRequest *httpRequestInit()

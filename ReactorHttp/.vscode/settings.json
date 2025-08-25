@@ -36,6 +36,7 @@
         "array": "c",
         "concepts": "c",
         "stdexcept": "c",
-        "httpresponse.h": "c"
+        "httpresponse.h": "c",
+        "buffer.h": "c"
     }
 }
