@@ -1,0 +1,2 @@
+/usr/bin/ar qc libReactorHttpBase.a CMakeFiles/ReactorHttpBase.dir/Buffer.c.o CMakeFiles/ReactorHttpBase.dir/ChannelMap.c.o CMakeFiles/ReactorHttpBase.dir/ThreadPool.c.o CMakeFiles/ReactorHttpBase.dir/WorkerThread.c.o
+/usr/bin/ranlib libReactorHttpBase.a

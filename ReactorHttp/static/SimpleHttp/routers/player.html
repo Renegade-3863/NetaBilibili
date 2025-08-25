@@ -35,7 +35,7 @@
         function qs(name) {
             return new URLSearchParams(location.search).get(name);
         }
-        const file = qs('file');
+    const file = qs('file');
         const id = qs('id') || file;
         const player = document.getElementById('player');
         if(!file) {
@@ -43,8 +43,12 @@
             throw 0;
         }
         console.log('加载视频', id, file);
-        // 指定视频文件路径
-        player.src = file;
+        // 指定视频文件路径（对空格/非 ASCII 做 URI 编码，避免 404）
+        try {
+            player.src = encodeURI(file);
+        } catch (e) {
+            player.src = file;
+        }
         // 添加元数据加载完成事件监听
         player.addEventListener('loadedmetadata', () => {
             // 获取 title 后显示到页面上

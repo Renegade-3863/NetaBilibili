@@ -15,13 +15,13 @@
 
 #define ResHeaderSize 16
 
-struct HttpResponse* httpResponseInit()
+struct HttpResponse *httpResponseInit()
 {
-    struct HttpResponse* response = (struct HttpResponse*)malloc(sizeof(struct HttpResponse));
+    struct HttpResponse *response = (struct HttpResponse *)malloc(sizeof(struct HttpResponse));
     response->headerNum = 0;
     // 默认初始化 16 个头部
     int size = sizeof(struct ResponseHeader) * ResHeaderSize;
-    response->headers = (struct ResponseHeader*)malloc(size);
+    response->headers = (struct ResponseHeader *)malloc(size);
     response->statusCode = Unknown;
     // 初始化 headers
     bzero(response->headers, size);
@@ -35,7 +35,7 @@ struct HttpResponse* httpResponseInit()
     return response;
 }
 
-void httpResponseDestroy(struct HttpResponse* response)
+void httpResponseDestroy(struct HttpResponse *response)
 {
     if (response)
     {
@@ -51,52 +51,59 @@ void httpResponseDestroy(struct HttpResponse* response)
     }
 }
 
-void httpResponseAddHeader(struct HttpResponse* response, const char* key, const char* value)
+void httpResponseAddHeader(struct HttpResponse *response, const char *key, const char *value)
 {
     if (response == NULL || key == NULL || value == NULL)
     {
         return;
     }
-    strcpy(response->headers[response->headerNum].key, key);
-    strcpy(response->headers[response->headerNum].value, value);
+    // 防止越界：最多支持 ResHeaderSize 个头
+    if (response->headerNum >= ResHeaderSize)
+    {
+        // 丢弃超出的头，避免越界
+        return;
+    }
+    // 有界复制，确保以 NUL 结尾
+    snprintf(response->headers[response->headerNum].key,
+             sizeof(response->headers[response->headerNum].key), "%s", key);
+    snprintf(response->headers[response->headerNum].value,
+             sizeof(response->headers[response->headerNum].value), "%s", value);
     response->headerNum++;
 }
 
-void httpResponsePrepareMsg(struct TcpConnection* conn, struct HttpResponse* response, struct Buffer* sendBuf, int socket)
+void httpResponsePrepareMsg(struct TcpConnection *conn, struct HttpResponse *response, struct Buffer *sendBuf, int socket)
 {
-    char tmp[1024] = { 0 };
+    char tmp[1024] = {0};
     sprintf(tmp, "HTTP/1.1 %d %s\r\n", response->statusCode, response->statusMsg);
 
     bufferAppendString(sendBuf, tmp);
     for (int i = 0; i < response->headerNum; ++i)
     {
         sprintf(tmp, "%s: %s\r\n", response->headers[i].key, response->headers[i].value);
-        //printf("Header: %s\n", tmp);
+        // printf("Header: %s\n", tmp);
         bufferAppendString(sendBuf, tmp);
     }
     bufferAppendString(sendBuf, "\r\n");
-#ifndef MSG_SEND_AUTO
     // 同步发送头部+短体数据（非事件驱动模式）
     bufferSendData(sendBuf, socket);
-#endif
-    if(response->sendDataFunc)
+    if (response->sendDataFunc)
     {
         int ret = response->sendDataFunc(response->fileName, sendBuf, socket);
         // 根据返回值决定后续处理
-        if(ret == -2)
+        if (ret == -2)
         {
             // Critical failure，需要停止监听写事件，内部已经关闭了文件描述符，外面不需要再次关闭
-            if(isWriteEventEnable(conn->channel))
+            if (isWriteEventEnable(conn->channel))
             {
                 writeEventEnable(conn->channel, false);
                 eventLoopModify(conn->evLoop, conn->channel);
             }
         }
-        else if(ret == -1)
+        else if (ret == -1)
         {
             // 常规的错误，不需要特殊处理
             // 保证写事件被注册监听
-            if(!isWriteEventEnable(conn->channel))
+            if (!isWriteEventEnable(conn->channel))
             {
                 writeEventEnable(conn->channel, true);
                 eventLoopModify(conn->evLoop, conn->channel);
@@ -107,7 +114,7 @@ void httpResponsePrepareMsg(struct TcpConnection* conn, struct HttpResponse* res
         {
             response->sendDataFunc = NULL; // 清空发送函数指针
             // 停止检测写事件
-            if(isWriteEventEnable(conn->channel))
+            if (isWriteEventEnable(conn->channel))
             {
                 writeEventEnable(conn->channel, false);
                 eventLoopModify(conn->evLoop, conn->channel);
@@ -116,12 +123,12 @@ void httpResponsePrepareMsg(struct TcpConnection* conn, struct HttpResponse* res
         return;
     }
     // 上面的调用的是完全发送数据的函数，另外判断一下是否需要继续部分发送
-    if(response->sendRangeDataFunc)
+    if (response->sendRangeDataFunc)
     {
         response->sendRangeDataFunc(response, sendBuf, socket);
     }
     // 发送完毕后，检查文件描述符是否需要关闭
-    if(response->fileFd < 0)
+    if (response->fileFd < 0)
     {
         // 文件发送完毕，可以关闭写事件监听
         writeEventEnable(conn->channel, false);
@@ -129,13 +136,13 @@ void httpResponsePrepareMsg(struct TcpConnection* conn, struct HttpResponse* res
     }
 }
 
-void sendRangeRequestData(struct HttpResponse* response, struct Buffer* sendBuf, int socket)
-{    
+void sendRangeRequestData(struct HttpResponse *response, struct Buffer *sendBuf, int socket)
+{
     int fd = response->fileFd;
-    off_t* offset = &response->fileOffset;
-    int* remaining = &response->fileLength;
+    off_t *offset = &response->fileOffset;
+    int *remaining = &response->fileLength;
 
-    if(fd < 0 || *remaining <= 0)
+    if (fd < 0 || *remaining <= 0)
     {
         // 文件描述符无效或剩余长度小于等于 0，直接返回
         if (fd >= 0)
@@ -150,21 +157,21 @@ void sendRangeRequestData(struct HttpResponse* response, struct Buffer* sendBuf,
         return;
     }
     // 还有数据要发，我们就发一下
-    while(*remaining > 0)
+    while (*remaining > 0)
     {
         // 一次最多发送 65536 字节
         size_t toSend = *remaining > 65536 ? 65536 : *remaining;
         // printf("Sending %ld bytes from offset %ld\n", toSend, *offset);
 
         ssize_t sent = sendfile(socket, fd, offset, toSend);
-        if(sent < 0)
-        {   
-            if(errno == EINTR)
+        if (sent < 0)
+        {
+            if (errno == EINTR)
             {
                 // 被信号中断，重试
                 continue;
             }
-            else if(errno == EAGAIN || errno == EWOULDBLOCK)
+            else if (errno == EAGAIN || errno == EWOULDBLOCK)
             {
                 // 非阻塞模式下没有数据可发送，退出循环，等待下一次写事件
                 // printf("暂时无法发送数据...\n");
@@ -182,7 +189,7 @@ void sendRangeRequestData(struct HttpResponse* response, struct Buffer* sendBuf,
                 break;
             }
         }
-        else if(sent == 0)
+        else if (sent == 0)
         {
             // 发送完成，我们 break 即可
             *remaining = 0;
@@ -193,18 +200,107 @@ void sendRangeRequestData(struct HttpResponse* response, struct Buffer* sendBuf,
 
 // Not necessary
 #ifndef MSG_SEND_AUTO
-    if(bufferReadableSize(sendBuf) > 0)
+    if (bufferReadableSize(sendBuf) > 0)
     {
         bufferSendData(sendBuf, socket);
     }
 #endif
 
     // 如果发送完成，关闭文件描述符
-    if(*remaining == 0 && fd >= 0)
+    if (*remaining == 0 && fd >= 0)
     {
         // printf("Closing file descriptor %d\n", fd);
         close(fd);
         response->fileFd = -1;
         response->sendRangeDataFunc = NULL; // 清空函数指针
     }
+}
+
+// Make the comments visible
+/*
+    根据状态码获取状态文本
+    其中，POST exclusive 的有：
+    - 201 Created：成功创建了资源文件
+    - 413 Payload Too Large：客户端上传的文件太大，超过了服务器允许的最大文件限制
+    - 415 Unsupported Media Type：客户端上传的文件类型不被服务器支持
+*/
+static const char *statusText(enum HttpStatusCode code)
+{
+    switch (code)
+    {
+        case SwitchingProtocols:
+            return "Switching Protocols";
+        case OK:
+            return "OK";
+        case Created:
+            return "Created";
+        case MovedPermanently:
+            return "Moved Permanently";
+        case MovedTemporarily:
+            return "Found";
+        case BadRequest:
+            return "Bad Request";
+        case Forbidden:
+            return "Forbidden";
+        case NotFound:
+            return "Not Found";
+        case RequestEntityTooLarge:
+            return "Payload Too Large";
+        case UnsupportedMediaType:
+            return "Unsupported Media Type";
+        case InternalServerError:
+            return "Internal Server Error";
+        default:
+            return "Unknown";
+    }
+}
+
+// 尽量减少对 GET 请求调用链的破坏，这里新开一个函数，用于处理 POST 请求的 JSON 响应（屎山代码已经开始形成了。。。）
+void httpResponseSendJson(struct TcpConnection *conn, struct HttpResponse *response, struct Buffer *sendBuf,
+                          int socket, enum HttpStatusCode code, const char *jsonBody)
+{
+    // 如果没有响应结构体，或者发送缓存没有初始化，那么没法进行发送，我们直接返回即可
+    if (!response || !sendBuf)
+        return;
+    // 把状态码和状态信息填入响应结构体
+    response->statusCode = code;
+    const char *text = statusText(code);
+    strncpy(response->statusMsg, text, sizeof(response->statusMsg) - 1);
+    response->statusMsg[sizeof(response->statusMsg) - 1] = '\0';
+
+    // 清空旧的头（简单做法：重置计数）
+    response->headerNum = 0;
+    httpResponseAddHeader(response, "Content-Type", "application/json; charset=utf-8");
+    char lenbuf[64];
+    int bodyLen = jsonBody ? (int)strlen(jsonBody) : 0;
+    snprintf(lenbuf, sizeof(lenbuf), "%d", bodyLen);
+    httpResponseAddHeader(response, "Content-Length", lenbuf);
+    httpResponseAddHeader(response, "Connection", "keep-alive");
+
+    // 写状态行和头
+    char line[128];
+    snprintf(line, sizeof(line), "HTTP/1.1 %d %s\r\n", response->statusCode, response->statusMsg);
+    bufferAppendString(sendBuf, line);
+    for (int i = 0; i < response->headerNum; ++i)
+    {
+        char h[256];
+        snprintf(h, sizeof(h), "%s: %s\r\n", response->headers[i].key, response->headers[i].value);
+        bufferAppendString(sendBuf, h);
+    }
+    bufferAppendString(sendBuf, "\r\n");
+    if (bodyLen > 0)
+    {
+        bufferAppendData(sendBuf, jsonBody, bodyLen);
+    }
+
+// 默认进行异步发送
+#ifdef MSG_SEND_AUTO
+    bufferSendData(sendBuf, socket);
+#else
+    if (conn && conn->channel && !isWriteEventEnable(conn->channel))
+    {
+        writeEventEnable(conn->channel, true);
+        eventLoopModify(conn->evLoop, conn->channel);
+    }
+#endif
 }

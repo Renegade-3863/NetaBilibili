@@ -291,6 +291,8 @@ struct TcpConnection *tcpConnectionInit(int fd, struct EventLoop *evLoop)
     conn->channel = channelInit(fd, ReadEvent, processRead, processWrite, tcpConnectionDestroy, conn);
     // 默认不是 WebSocket 连接
     conn->isWebSocket = false;
+    // 默认无上传上下文
+    conn->upload = NULL;
     // 将新建的连接添加到 eventLoop 中
     eventLoopAddTask(evLoop, conn->channel, ADD);
     {
@@ -338,6 +340,12 @@ int tcpConnectionDestroy(void *arg)
         if (conn->writeBuf) bufferDestroy(conn->writeBuf);
         if (conn->request) httpRequestDestroy(conn->request);
         if (conn->response) httpResponseDestroy(conn->response);
+        // 一定要保证某个传输上下文打开的 fd 被正确关闭，否则会导致文件描述符泄漏
+        if (conn->upload)
+        {
+            if (conn->upload->fd >= 0) close(conn->upload->fd);
+            free(conn->upload);
+        }
         free(conn);
     }
     return 0;

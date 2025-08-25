@@ -35,6 +35,7 @@
         "algorithm": "c",
         "array": "c",
         "concepts": "c",
-        "stdexcept": "c"
+        "stdexcept": "c",
+        "httpresponse.h": "c"
     }
 }

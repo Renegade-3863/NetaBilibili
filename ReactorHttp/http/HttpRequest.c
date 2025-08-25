@@ -109,14 +109,11 @@ static char *splitRequestLine(char *start, char *end, const char *sub, char **pt
     return space + 1;
 }
 
-/**
- * @return PARSE_INCOMPLETE: 当前 缓冲中的数据不足以完成下一步，调用者保留缓冲区，不关闭连接，等待下次可读
- * @return PARSE_OK: 解析成功
- * @return PARSE_ERROR: 解析出错，调用者准备发送 400 并关闭连接
- */
-ParseResult parseHttpRequest(struct TcpConnection *conn, struct HttpRequest *request, struct Buffer *readBuf, struct HttpResponse *response, struct Buffer *sendBuf, int socket)
+// --------------------- helpers for modular parsing/writing ---------------------
+
+// 清理上一次请求解析时分配的 method/url/version 和 headers 字符串，保留 headers 数组容量
+static inline void request_cleanup_previous_allocs(struct HttpRequest *request)
 {
-    /* Free any previously allocated strings/headers to avoid leaks when reusing HttpRequest */
     if (request->method)
     {
         free(request->method);
@@ -141,6 +138,505 @@ ParseResult parseHttpRequest(struct TcpConnection *conn, struct HttpRequest *req
         }
         request->reqHeadersNum = 0;
     }
+}
+
+// 将新上传的视频条目写入 videos.json（位于 static/SimpleHttp/public/videos.json）
+// 采用简单的读-改-写：
+// - 若文件不存在则创建为 [ newItem ]
+// - 若已存在且包含相同文件路径则不重复添加
+// - 否则在结尾 ] 前追加 , newItem
+static void append_video_to_videos_json(const char *filename, const char *url_path, int duration_sec)
+{
+    // 写入到站点的 public 目录（相对当前工作目录，main.c 会 chdir 到站点根）
+    const char *json_path = "public/videos.json";
+    const char *tmp_path = "public/videos.json.tmp";
+
+    // id/title 使用去扩展名的名称
+    char base[128] = {0};
+    snprintf(base, sizeof(base), "%s", filename);
+    // 去掉扩展名
+    for (int i = (int)strlen(base) - 1; i >= 0; --i)
+    {
+        if (base[i] == '.')
+        {
+            base[i] = '\0';
+            break;
+        }
+        if (base[i] == '/' || base[i] == '\\')
+            break;
+    }
+
+    // 构造下载链接
+    const char *dl_prefix = "http://localhost:8080/upload/";
+    size_t dl_len = strlen(dl_prefix) + strlen(filename) + 1;
+    char *download_url = (char *)malloc(dl_len);
+    if (!download_url)
+        return;
+    snprintf(download_url, dl_len, "%s%s", dl_prefix, filename);
+
+    // 构造 JSON 条目（使用动态缓冲避免被长文件名截断导致 JSON 失配）
+    const char *tmpl = "{\n  \"id\": \"%s\",\n  \"title\": \"%s\",\n  \"file\": \"%s\",\n  \"poster\": \"\",\n  \"download\": \"%s\",\n  \"duration\": %d\n}";
+    size_t need = (size_t)snprintf(NULL, 0, tmpl, base, base, url_path, download_url, duration_sec) + 1;
+    char *newItem = (char *)malloc(need);
+    if (!newItem)
+    {
+        free(download_url);
+        return;
+    }
+    snprintf(newItem, need, tmpl, base, base, url_path, download_url, duration_sec);
+
+    // 读入原文件内容
+    // 确保 public 目录存在
+    struct stat st_pub;
+    if (stat("public", &st_pub) == -1)
+    {
+        mkdir("public", 0755);
+    }
+
+    FILE *fp = fopen(json_path, "rb");
+    printf("Reading JSON file: %s\n", json_path);
+    if (!fp)
+    {
+        // 直接创建一个新文件
+        printf("Creating new JSON file: %s\n", json_path);
+        FILE *out = fopen(json_path, "wb");
+        if (!out)
+        {
+            free(newItem);
+            free(download_url);
+            return;
+        }
+        fprintf(out, "[\n%s\n]\n", newItem);
+        fclose(out);
+        free(newItem);
+        free(download_url);
+        return;
+    }
+
+    // 获取文件大小
+    fseek(fp, 0, SEEK_END);
+    long len = ftell(fp);
+    if (len < 0)
+    {
+        fclose(fp);
+        return;
+    }
+    fseek(fp, 0, SEEK_SET);
+    char *buf = (char *)malloc((size_t)len + 1);
+    if (!buf)
+    {
+        fclose(fp);
+        free(newItem);
+        free(download_url);
+        return;
+    }
+    size_t nread = fread(buf, 1, (size_t)len, fp);
+    fclose(fp);
+    buf[nread] = '\0';
+
+    // 如果已经包含相同 url_path，则跳过
+    if (strstr(buf, url_path) != NULL)
+    {
+        free(buf);
+        free(newItem);
+        free(download_url);
+        return;
+    }
+
+    // 找到最后一个 ']' 位置
+    long end = (long)strlen(buf) - 1;
+    while (end >= 0 && (buf[end] == '\n' || buf[end] == '\r' || buf[end] == ' ' || buf[end] == '\t'))
+        end--;
+    // 如果找不到有效的 ']'，则重置为一个空数组
+    int hasItems = 0;
+    long rbracket = -1;
+    for (long i = end; i >= 0; --i)
+    {
+        if (buf[i] == ']')
+        {
+            rbracket = i;
+            break;
+        }
+    }
+    if (rbracket < 0)
+    {
+        free(buf);
+        FILE *out = fopen(json_path, "wb");
+        if (!out)
+        {
+            free(newItem);
+            free(download_url);
+            return;
+        }
+        fprintf(out, "[\n%s\n]\n", newItem);
+        fclose(out);
+        free(newItem);
+        free(download_url);
+        return;
+    }
+    // 判断当前数组是否非空：在 [ 和 ] 之间是否存在 '{'
+    for (long i = 0; i < rbracket; ++i)
+    {
+        if (buf[i] == '{')
+        {
+            hasItems = 1;
+            break;
+        }
+    }
+
+    // 输出到临时文件
+    FILE *out = fopen(tmp_path, "wb");
+    if (!out)
+    {
+        free(buf);
+        free(newItem);
+        free(download_url);
+        return;
+    }
+    // 写入到 ']' 前的所有内容（去掉末尾的空白再回退到 ']' 之前）
+    fwrite(buf, 1, (size_t)rbracket, out);
+    // 插入逗号分隔
+    if (hasItems)
+    {
+        fprintf(out, ",\n%s\n]", newItem);
+    }
+    else
+    {
+        fprintf(out, "\n%s\n]", newItem);
+    }
+    // 追加换行
+    fprintf(out, "\n");
+    fclose(out);
+    free(buf);
+    free(newItem);
+    free(download_url);
+
+    // 原子替换
+    rename(tmp_path, json_path);
+}
+
+// 在缓冲区中查找 CRLFCRLF，返回指向 "\r\n\r\n" 起始位置的指针，找不到返回 NULL
+static inline char *find_headers_terminator(char *start, int readable)
+{
+    return memmem(start, readable, "\r\n\r\n", 4);
+}
+
+// 解析请求行，填充 request->method/url/version
+static inline bool parse_start_line(struct HttpRequest *request, char *start, size_t header_block_len, char **line_end_out)
+{
+    char *line_end = memmem(start, header_block_len, "\r\n", 2);
+    if (!line_end)
+    {
+        printf("parseHttpRequest: Invalid request line, no CRLF found\n");
+        return false;
+    }
+    char *after = splitRequestLine(start, line_end, " ", &request->method);
+    if (!after)
+    {
+        printf("parseHttpRequest: Failed to parse method\n");
+        return false;
+    }
+    after = splitRequestLine(after, line_end, " ", &request->url);
+    if (!after)
+    {
+        printf("parseHttpRequest: Failed to parse URL\n");
+        return false;
+    }
+    char *q = strchr(request->url, '?');
+    if (q)
+        *q = '\0';
+    char *tmpver = NULL;
+    splitRequestLine(after, line_end, NULL, &tmpver);
+    request->version = tmpver;
+    if (line_end_out)
+        *line_end_out = line_end;
+    return true;
+}
+
+// 解析 header 行到 request->reqHeaders 数组
+static inline bool parse_headers_block(struct HttpRequest *request, char *headers_start, char *hdr_end)
+{
+    request->reqHeadersNum = 0;
+    char *hp = headers_start;
+    while (hp < hdr_end)
+    {
+        char *next_eol = memmem(hp, hdr_end - hp, "\r\n", 2);
+        if (!next_eol)
+        {
+            printf("parseHttpRequest: Invalid header format, no CRLF found\n");
+            return false;
+        }
+        size_t line_len = (size_t)(next_eol - hp);
+        if (line_len == 0)
+        {
+            break; // 空行，header 结束
+        }
+        char *colon = memmem(hp, line_len, ": ", 2);
+        if (!colon)
+        {
+            printf("parseHttpRequest: Invalid header format, no colon found\n");
+            return false;
+        }
+        size_t key_len = (size_t)(colon - hp);
+        size_t val_len = line_len - key_len - 2; // 去掉": "
+        char *key = (char *)malloc(key_len + 1);
+        char *val = (char *)malloc(val_len + 1);
+        if (!key || !val)
+        {
+            free(key);
+            free(val);
+            printf("parseHttpRequest: Failed to allocate memory for headers\n");
+            return false;
+        }
+        memcpy(key, hp, key_len);
+        key[key_len] = '\0';
+        memcpy(val, colon + 2, val_len);
+        val[val_len] = '\0';
+        httpRequestAddHeader(request, key, val);
+        hp = next_eol + 2;
+    }
+    return true;
+}
+
+// 读取 Content-Length / Transfer-Encoding: chunked 标志
+static inline void get_body_meta(struct HttpRequest *request, long *content_length_out, bool *is_chunked_out)
+{
+    long content_length = -1;
+    bool is_chunked = false;
+    char *cl = httpRequestGetHeader(request, "Content-Length");
+    char *te = httpRequestGetHeader(request, "Transfer-Encoding");
+    if (cl)
+    {
+        content_length = atol(cl);
+        if (content_length < 0) content_length = -1;
+    }
+    if (te && strcasestr(te, "chunked") != NULL)
+    {
+        is_chunked = true;
+    }
+    if (content_length_out) *content_length_out = content_length;
+    if (is_chunked_out) *is_chunked_out = is_chunked;
+}
+
+// 继续处理已存在的上传：把 readBuf 中的数据尽量写入，必要时完成响应
+static inline ParseResult upload_continue_write(struct TcpConnection *conn,
+                                                struct Buffer *readBuf,
+                                                struct HttpResponse *response,
+                                                struct Buffer *sendBuf,
+                                                int socket)
+{
+    char *base = readBuf->data;
+    int available = bufferReadableSize(readBuf);
+    if (available <= 0)
+        return PARSE_INCOMPLETE;
+
+    ssize_t remaining = conn->upload->expected >= 0 ? (conn->upload->expected - conn->upload->received) : available;
+    int to_write = (int)((remaining < available && conn->upload->expected >= 0) ? remaining : available);
+    int written_total = 0;
+    while (written_total < to_write)
+    {
+        ssize_t n = write(conn->upload->fd, base + readBuf->readPos + written_total, to_write - written_total);
+        if (n < 0)
+        {
+            if (errno == EINTR) continue;
+            char path_saved[256];
+            snprintf(path_saved, sizeof(path_saved), "%s", conn->upload->path);
+            close(conn->upload->fd);
+            unlink(path_saved);
+            free(conn->upload);
+            conn->upload = NULL;
+            readBuf->readPos += written_total;
+            httpResponseSendJson(conn, response, sendBuf, socket, InternalServerError, "{\"error\":\"write failed\"}");
+            return PARSE_OK;
+        }
+        if (n == 0) break;
+        written_total += n;
+    }
+    conn->upload->received += written_total;
+    readBuf->readPos += written_total;
+
+    if (conn->upload->expected >= 0 && conn->upload->received < conn->upload->expected)
+        return PARSE_INCOMPLETE;
+
+    // 完成
+    close(conn->upload->fd);
+    conn->upload->fd = -1;
+    char json[256];
+    snprintf(json, sizeof(json), "{\"ok\":true,\"path\":\"/static/uploads/%s\",\"size\":%ld}", conn->upload->filename, (long)conn->upload->received);
+    char url_path[256];
+    snprintf(url_path, sizeof(url_path), "/static/uploads/%s", conn->upload->filename);
+    append_video_to_videos_json(conn->upload->filename, url_path, conn->upload->duration_sec);
+    httpResponseSendJson(conn, response, sendBuf, socket, Created, json);
+    free(conn->upload);
+    conn->upload = NULL;
+    return PARSE_OK;
+}
+
+// 初始化上传上下文：解码文件名、创建目录、打开文件、记录期望长度和时长
+static inline bool upload_init_from_request(struct TcpConnection *conn,
+                                            struct HttpRequest *request,
+                                            long content_length)
+{
+    if (conn->upload != NULL) return true;
+
+    const char *encoded = request->url + 8; // "/upload/"
+    char decoded_name[256] = {0};
+    decodeMsg(decoded_name, (char *)encoded);
+    if (decoded_name[0] == '\0')
+    {
+        return false;
+    }
+    struct stat st_dir;
+    if (stat("static/uploads", &st_dir) == -1)
+    {
+        mkdir("static/uploads", 0755);
+    }
+    char path[256];
+    snprintf(path, sizeof(path), "static/uploads/%s", decoded_name);
+    int fd = open(path, O_CREAT | O_TRUNC | O_WRONLY, 0644);
+    if (fd == -1)
+    {
+        return false;
+    }
+    conn->upload = (struct UploadCtx *)calloc(1, sizeof(struct UploadCtx));
+    conn->upload->fd = fd;
+    conn->upload->expected = content_length;
+    conn->upload->received = 0;
+    conn->upload->chunked = false;
+    snprintf(conn->upload->filename, sizeof(conn->upload->filename), "%s", decoded_name);
+    snprintf(conn->upload->path, sizeof(conn->upload->path), "%s", path);
+    int duration_sec = 0;
+    char *xdur = httpRequestGetHeader(request, "X-Video-Duration");
+    if (xdur)
+    {
+        long v = strtol(xdur, NULL, 10);
+        if (v < 0) v = 0;
+        if (v > 24 * 60 * 60) v = 24 * 60 * 60;
+        duration_sec = (int)v;
+    }
+    conn->upload->duration_sec = duration_sec;
+    return true;
+}
+
+// 处理带 Content-Length 的 /upload 路由（首段+后续段）
+static inline ParseResult handle_upload_with_content_length(struct TcpConnection *conn,
+                                                           struct HttpRequest *request,
+                                                           struct Buffer *readBuf,
+                                                           struct HttpResponse *response,
+                                                           struct Buffer *sendBuf,
+                                                           int socket,
+                                                           char *base,
+                                                           int body_start_pos,
+                                                           int total_readable_after_headers,
+                                                           size_t header_block_len,
+                                                           long content_length)
+{
+    // 初始化 upload 上下文（仅首段时生效）
+    if (conn->upload == NULL)
+    {
+        if (!upload_init_from_request(conn, request, content_length))
+        {
+            // 至少消费 header，避免重复解析
+            readBuf->readPos += (int)header_block_len;
+            httpResponseSendJson(conn, response, sendBuf, socket, BadRequest, "{\"error\":\"invalid filename or open failed\"}");
+            return PARSE_OK;
+        }
+    }
+
+    // 写入本批 body 字节
+    int available = total_readable_after_headers;
+    if (available < 0) available = 0;
+    const char *body_ptr = base + body_start_pos;
+    int to_consume = available;
+    if (conn->upload->expected >= 0)
+    {
+        ssize_t remaining = conn->upload->expected - conn->upload->received;
+        if (remaining < to_consume) to_consume = (int)remaining;
+    }
+    int written_total = 0;
+    while (written_total < to_consume)
+    {
+        ssize_t n = write(conn->upload->fd, body_ptr + written_total, to_consume - written_total);
+        if (n < 0)
+        {
+            if (errno == EINTR) continue;
+            char path_saved[256];
+            snprintf(path_saved, sizeof(path_saved), "%s", conn->upload->path);
+            close(conn->upload->fd);
+            unlink(path_saved);
+            free(conn->upload);
+            conn->upload = NULL;
+            readBuf->readPos += (int)header_block_len + written_total;
+            httpResponseSendJson(conn, response, sendBuf, socket, InternalServerError, "{\"error\":\"write failed\"}");
+            return PARSE_OK;
+        }
+        if (n == 0) break;
+        written_total += n;
+    }
+    conn->upload->received += written_total;
+    readBuf->readPos += (int)header_block_len + written_total;
+
+    if (conn->upload->received < conn->upload->expected)
+        return PARSE_INCOMPLETE;
+
+    // 完成：关闭并发送 201
+    close(conn->upload->fd);
+    conn->upload->fd = -1;
+    char json[256];
+    snprintf(json, sizeof(json), "{\"ok\":true,\"path\":\"/static/uploads/%s\",\"size\":%ld}", conn->upload->filename, (long)conn->upload->expected);
+    char url_path[256];
+    snprintf(url_path, sizeof(url_path), "/static/uploads/%s", conn->upload->filename);
+    append_video_to_videos_json(conn->upload->filename, url_path, conn->upload->duration_sec);
+    httpResponseSendJson(conn, response, sendBuf, socket, Created, json);
+    free(conn->upload);
+    conn->upload = NULL;
+    request->curState = PS_REQLINE;
+    return PARSE_OK;
+}
+
+// 非上传请求：等待完整 body，再交由业务处理
+static inline ParseResult handle_regular_with_body(struct TcpConnection *conn,
+                                                   struct HttpRequest *request,
+                                                   struct Buffer *readBuf,
+                                                   struct HttpResponse *response,
+                                                   struct Buffer *sendBuf,
+                                                   int socket,
+                                                   size_t header_block_len,
+                                                   long content_length)
+{
+    int total_readable_after_headers = bufferReadableSize(readBuf) - (int)header_block_len;
+    if (total_readable_after_headers < content_length)
+        return PARSE_INCOMPLETE;
+    int consume_len = (int)header_block_len + (int)content_length;
+    readBuf->readPos += consume_len;
+    processHttpRequest(conn, request, response);
+    httpResponsePrepareMsg(conn, response, sendBuf, socket);
+    request->curState = PS_REQLINE;
+    return PARSE_OK;
+}
+
+// 判断是否为上传路由：仅支持 PUT/POST /upload/<filename>
+static bool is_upload_route(const char *method, const char *url)
+{
+    if (!method || !url)
+        return false;
+    if (strncasecmp(method, "put", 3) != 0 && strncasecmp(method, "post", 4) != 0)
+        return false;
+    // 判断路径是否以 /upload/ 开头，同时存在一个有名字的文件
+    return strncmp(url, "/upload/", 8) == 0 && strlen(url) > 8;
+}
+
+// --------------------- End of helpers for modular parsing/writing ---------------------
+
+/**
+ * @return PARSE_INCOMPLETE: 当前 缓冲中的数据不足以完成下一步，调用者保留缓冲区，不关闭连接，等待下次可读
+ * @return PARSE_OK: 解析成功
+ * @return PARSE_ERROR: 解析出错，调用者准备发送 400 并关闭连接
+ */
+ParseResult parseHttpRequest(struct TcpConnection *conn, struct HttpRequest *request, struct Buffer *readBuf, struct HttpResponse *response, struct Buffer *sendBuf, int socket)
+{
+    // 释放上一次解析的分配项，避免复用连接导致的泄漏
+    request_cleanup_previous_allocs(request);
 
     // 快速别名？
     char *base = readBuf->data;
@@ -151,8 +647,17 @@ ParseResult parseHttpRequest(struct TcpConnection *conn, struct HttpRequest *req
         return PARSE_INCOMPLETE;
     }
 
+    // 若已有正在进行的上传（已消费完 headers，仅余/新增 body），直接继续写入文件
+    if (conn->upload != NULL)
+    {
+        ParseResult r = upload_continue_write(conn, readBuf, response, sendBuf, socket);
+        if (r != PARSE_INCOMPLETE)
+            request->curState = PS_REQLINE;
+        return r;
+    }
+
     // 1) 找到 headers 结束标记 "\r\n\r\n"
-    char *hdr_end = memmem(base + readBuf->readPos, readable, "\r\n\r\n", 4);
+    char *hdr_end = find_headers_terminator(base + readBuf->readPos, readable);
     if (!hdr_end)
     {
         // header 未完整到达
@@ -164,113 +669,18 @@ ParseResult parseHttpRequest(struct TcpConnection *conn, struct HttpRequest *req
     size_t header_block_len = (hdr_end + 4) - start;
     hdr_end += 4;
     // 2) 解析 request line （第一行）：method SP url SP version CRLF
-    char *line_end = memmem(start, header_block_len, "\r\n", 2);
-    if (!line_end)
-    {
-        // 不太可能，因为上面的检查已经确保了 header_block_len > 0，如果出现这种情况，说明发过来的不是合法的 HTTP 请求
-        printf("parseHttpRequest: Invalid request line, no CRLF found\n");
+    char *line_end = NULL;
+    if (!parse_start_line(request, start, header_block_len, &line_end))
         return PARSE_ERROR;
-    }
-    // 到这里，说明请求行是完整的，我们可以对它进行切分，调用 helper function
-    // 解析 method
-    char *after = splitRequestLine(start, line_end, " ", &request->method);
-    if (!after)
-    {
-        // 切分失败，肯定是出问题了，返回 error
-        printf("parseHttpRequest: Failed to parse method\n");
-        return PARSE_ERROR;
-    }
-    // 解析 URL
-    after = splitRequestLine(after, line_end, " ", &request->url);
-    // 如果后面携带了 query 部分，要剪掉
-    char *query_start = strchr(request->url, '?');
-    if (query_start)
-    {
-        *query_start = '\0';
-    }
-    if (!after)
-    {
-        printf("parseHttpRequest: Failed to parse URL\n");
-        return PARSE_ERROR;
-    }
-    // 解析 version
-    char *tmpver = NULL;
-    splitRequestLine(after, line_end, NULL, &tmpver);
-    request->version = tmpver;
 
     // 3) 解析 headers 部分（从 line_end + 2 到 hdr_end）
     // 先清理旧的 headers
-    request->reqHeadersNum = 0;
-    char *hp = line_end + 2;
-    while (hp < hdr_end)
-    {
-        // 找到下一行 header
-        char *next_eol = memmem(hp, hdr_end - hp, "\r\n", 2);
-        if (!next_eol)
-        {
-            // 格式非法
-            printf("parseHttpRequest: Invalid header format, no CRLF found\n");
-            return PARSE_ERROR;
-        }
-        size_t line_len = next_eol - hp;
-        if (line_len == 0)
-        {
-            // 空行，我们认为 headers 结束
-            break;
-        }
-        // 查找 ": "
-        char *colon = memmem(hp, line_len, ": ", 2);
-        if (!colon)
-        {
-            // 非法的 header 格式：视为 parse error
-            printf("parseHttpRequest: Invalid header format, no colon found\n");
-            return PARSE_ERROR;
-        }
-        size_t key_len = colon - hp;
-        size_t val_len = line_len - key_len - 2; // -2 是因为 ": " 的长度
-        char *key = (char *)malloc(key_len + 1);
-        char *val = (char *)malloc(val_len + 1);
-        if (!key || !val)
-        {
-            // 内存分配失败
-            free(key);
-            free(val);
-            printf("parseHttpRequest: Failed to allocate memory for headers\n");
-            return PARSE_ERROR;
-        }
-        memcpy(key, hp, key_len);
-        key[key_len] = '\0';
-        memcpy(val, colon + 2, val_len); // +2 跳过 ": "
-        val[val_len] = '\0';
-        // 保存 header
-        httpRequestAddHeader(request, key, val);
-        // 移动到下一行
-        hp = next_eol + 2;
-    }
+    if (!parse_headers_block(request, line_end + 2, hdr_end))
+        return PARSE_ERROR;
 
     // 4) 决定是否有 body (检查 Content-Length 或 Transfer-Encoding: chunked)
-    char *cl = httpRequestGetHeader(request, "Content-Length");
-    char *te = httpRequestGetHeader(request, "Transfer-Encoding");
-    long content_length = -1;
-    // 用于判断是否是分块传输
-    bool is_chunked = false;
-
-    if (cl)
-    {
-        content_length = atol(cl);
-        if (content_length < 0)
-        {
-            content_length = -1;
-        }
-    }
-    if (te)
-    {
-        // 忽略大小写检查
-        if (strcasestr(te, "chunked") != NULL)
-        {
-            is_chunked = true;
-        }
-    }
+    long content_length = -1; bool is_chunked = false;
+    get_body_meta(request, &content_length, &is_chunked);
 
     // 定位 body 的起始位置（如果 header_block_len > 0，则 body_start = readPos + header_block_len)
     int body_start_pos = readBuf->readPos + header_block_len;
@@ -282,133 +692,19 @@ ParseResult parseHttpRequest(struct TcpConnection *conn, struct HttpRequest *req
         total_readable_after_headers = 0;
     }
 
-    // 5) 处理不同的 body 模式
-    // 分块发送的 request
-    /*
-        <十六进制块大小>\r\n
-        <块数据>\r\n
-    */
-    if (is_chunked)
+    // ——— 异步接收 POST: 支持基于 Content-Length 的流式写入 ———
+    if (content_length >= 0)
     {
-        // 如果是分块的，那么按块对数据进行遍历
-        int cur_pos = body_start_pos;
-        while (1)
+        // 上传路由：异步流式落盘
+        if (is_upload_route(request->method, request->url))
         {
-            // 找 chunk-size 行
-            if (cur_pos >= readBuf->writePos)
-            {
-                // 说明没有数据
-                return PARSE_INCOMPLETE;
-            }
-            // 定位 chunk-size 行尾
-            char *p = memmem(base + cur_pos, readBuf->writePos - cur_pos, "\r\n", 2);
-            if (!p)
-            {
-                // 没有找到 chunk-size 行尾，说明数据不完整
-                return PARSE_INCOMPLETE;
-            }
-            // 找到了，计算 chunk_size
-            size_t hex_len = p - (base + cur_pos);
-            if (hex_len == 0)
-            {
-                // 没有块长度数据，返回 error
-                return PARSE_ERROR;
-            }
-            // 复制 hex string
-            char *hexstr = (char *)malloc(hex_len + 1);
-            if (!hexstr)
-            {
-                // 内存分配失败
-                return PARSE_ERROR;
-            }
-            memcpy(hexstr, base + cur_pos, hex_len);
-            hexstr[hex_len] = '\0';
-            // 去掉行首的空格（trim）
-            char *trim = hexstr;
-            while (*trim && isspace((unsigned char)*trim))
-            {
-                ++trim;
-            }
-            // 把长度值转换为十进制
-            long chunk_size = strtol(trim, NULL, 16);
-            free(hexstr); // 释放 hexstr
-            // 把指针移动到下一个 chunk 的起始位置
-            cur_pos = (int)((p - base) + 2);
-            if (chunk_size < 0)
-            {
-                // 块长度不可能为负
-                return PARSE_ERROR;
-            }
-            if (chunk_size == 0)
-            {
-                // 代表这是最后一个 chunk，会有一个尾随的 CRLF (在 '0\r\n' 后面)，并且会以 \r\n\r\n 结尾
-                char *trail_end = memmem(base + cur_pos, readBuf->writePos - cur_pos, "\r\n\r\n", 4);
-                if (!trail_end)
-                {
-                    // 没有找到尾随的 CRLF，说明数据不完整
-                    return PARSE_INCOMPLETE;
-                }
-                // 消费直到 trail_end + 4 位置
-                int consume_len = (int)((trail_end + 4) - (base + readBuf->readPos));
-                // 移动 readPos 指针
-                readBuf->readPos += consume_len;
-                // 完成了一个请求
-                // 调用业务逻辑并准备响应
-                processHttpRequest(conn, request, response);
-                httpResponsePrepareMsg(conn, response, sendBuf, socket);
-                // 重置状态以便下次解析另一个请求
-                request->curState = PS_REQLINE;
-                // 返回 OK
-                return PARSE_OK;
-            }
-            else
-            {
-                // 非最终块：检查是否有 chunk_size + 2 字节长的内容可解析
-                if (readBuf->writePos - cur_pos < (int)(chunk_size + 2))
-                {
-                    // 数据不完整，返回 PARSE_INCOMPLETE
-                    return PARSE_INCOMPLETE;
-                }
-                // 当前 chunk 的数据是完整的，我们移动 cur_pos 指针
-                cur_pos += (int)chunk_size;
-                // 验证 CRLF 存在
-                if (cur_pos + 2 > readBuf->writePos)
-                {
-                    // CRLF 不完整
-                    return PARSE_INCOMPLETE;
-                }
-                if (!(base[cur_pos] == '\r' && base[cur_pos + 1] == '\n'))
-                {
-                    // 如果两个当前 chunk 不是以 CRLF 结尾，返回 PARSE_ERROR，格式出错了
-                    return PARSE_ERROR;
-                }
-                // 移动到下一个 chunk 的起始位置
-                cur_pos += 2;
-                // 继续循环直到 final_chunk
-                continue;
-            }
-        } // 结束 chunk 循环
-    }
-    // 否则，非 chunked 传输方式
-    // 我们知道传了 content_length 字节的内容
-    else if (content_length >= 0)
-    {
-        // 我们需要 content_length 字节的数据存在
-        if (total_readable_after_headers < content_length)
-        {
-            // 数据不完整，返回 PARSE_INCOMPLETE
-            return PARSE_INCOMPLETE;
+            return handle_upload_with_content_length(conn, request, readBuf, response, sendBuf, socket,
+                                                     base, body_start_pos, total_readable_after_headers,
+                                                     header_block_len, content_length);
         }
-        // 完整的 body 都在 buffer 中：消费 header+body
-        int consume_len = (int)header_block_len + (int)content_length;
-        // 移动读头
-        readBuf->readPos += consume_len;
-        // 调用业务处理并准备响应
-        processHttpRequest(conn, request, response);
-        httpResponsePrepareMsg(conn, response, sendBuf, socket);
-        request->curState = PS_REQLINE; // 重置状态以便下次解析另一个请求
-        // 返回 OK
-        return PARSE_OK;
+
+        // 非上传请求，继续保持原行为：必须等到完整 body 才处理
+        return handle_regular_with_body(conn, request, readBuf, response, sendBuf, socket, header_block_len, content_length);
     }
     else
     {
@@ -783,7 +1079,7 @@ static bool handleWebSocketHandshake(struct HttpRequest *request, struct HttpRes
 
     // 将 Base64 编码后的字符串添加到响应头中
     response->statusCode = SwitchingProtocols;
-    strcpy(response->statusMsg, "Switching Protocols");
+    snprintf(response->statusMsg, sizeof(response->statusMsg), "%s", "Switching Protocols");
     // 添加 Sec-WebSocket-Accept 响应头
     httpResponseAddHeader(response, "Sec-WebSocket-Accept", base64Hash);
     // 添加 Upgrade 响应头
@@ -809,6 +1105,8 @@ bool processHttpRequest(struct TcpConnection *conn, struct HttpRequest *request,
     response->fileFd = -1;
     response->fileOffset = 0;
     response->fileLength = 0;
+
+    // 处理 WebSocket 握手请求
     if (isWebSocketHandshake(request))
     {
         // 处理 WebSocket 握手请求
@@ -817,7 +1115,7 @@ bool processHttpRequest(struct TcpConnection *conn, struct HttpRequest *request,
         if (!flag)
         {
             response->statusCode = BadRequest;
-            strcpy(response->statusMsg, "Bad Request");
+            snprintf(response->statusMsg, sizeof(response->statusMsg), "%s", "Bad Request");
             return false;
         }
         // 处理 WebSocket 握手请求成功
@@ -855,9 +1153,9 @@ bool processHttpRequest(struct TcpConnection *conn, struct HttpRequest *request,
     {
         // 获取文件信息失败，说明文件不存在
         // 需要返回一个 404 响应
-        strcpy(response->fileName, "404.html");
+        snprintf(response->fileName, sizeof(response->fileName), "%s", "404.html");
         response->statusCode = NotFound;
-        strcpy(response->statusMsg, "Not Found");
+        snprintf(response->statusMsg, sizeof(response->statusMsg), "%s", "Not Found");
         // 添加响应头
         httpResponseAddHeader(response, "Content-type", getFileType(".html"));
         // 明确告知客户端自己要断开连接
@@ -866,9 +1164,9 @@ bool processHttpRequest(struct TcpConnection *conn, struct HttpRequest *request,
         return 0;
     }
 
-    strcpy(response->fileName, file);
+    snprintf(response->fileName, sizeof(response->fileName), "%s", file);
     response->statusCode = OK;
-    strcpy(response->statusMsg, "OK");
+    snprintf(response->statusMsg, sizeof(response->statusMsg), "%s", "OK");
     // �ж��ļ�����
     if (S_ISDIR(st.st_mode))
     {
@@ -902,7 +1200,7 @@ bool processHttpRequest(struct TcpConnection *conn, struct HttpRequest *request,
 
                 // 拼响应数据
                 response->statusCode = 206; // Partial Content
-                strcpy(response->statusMsg, "Partial Content");
+                snprintf(response->statusMsg, sizeof(response->statusMsg), "%s", "Partial Content");
 
                 // 设置 Content-Range 头
                 char contentRange[128];

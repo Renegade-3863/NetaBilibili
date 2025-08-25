@@ -1,0 +1,15 @@
+/home/hzouaf/task/prev/NetaBilibili/ReactorHttp/build/CMakeFiles/ReactorServer.dir
+/home/hzouaf/task/prev/NetaBilibili/ReactorHttp/build/CMakeFiles/edit_cache.dir
+/home/hzouaf/task/prev/NetaBilibili/ReactorHttp/build/CMakeFiles/rebuild_cache.dir
+/home/hzouaf/task/prev/NetaBilibili/ReactorHttp/build/base/CMakeFiles/ReactorHttpBase.dir
+/home/hzouaf/task/prev/NetaBilibili/ReactorHttp/build/base/CMakeFiles/edit_cache.dir
+/home/hzouaf/task/prev/NetaBilibili/ReactorHttp/build/base/CMakeFiles/rebuild_cache.dir
+/home/hzouaf/task/prev/NetaBilibili/ReactorHttp/build/tcp/CMakeFiles/ReactorHttpTcp.dir
+/home/hzouaf/task/prev/NetaBilibili/ReactorHttp/build/tcp/CMakeFiles/edit_cache.dir
+/home/hzouaf/task/prev/NetaBilibili/ReactorHttp/build/tcp/CMakeFiles/rebuild_cache.dir
+/home/hzouaf/task/prev/NetaBilibili/ReactorHttp/build/http/CMakeFiles/ReactorHttpHttp.dir
+/home/hzouaf/task/prev/NetaBilibili/ReactorHttp/build/http/CMakeFiles/edit_cache.dir
+/home/hzouaf/task/prev/NetaBilibili/ReactorHttp/build/http/CMakeFiles/rebuild_cache.dir
+/home/hzouaf/task/prev/NetaBilibili/ReactorHttp/build/webSocket/CMakeFiles/ReactorHttpWebSocket.dir
+/home/hzouaf/task/prev/NetaBilibili/ReactorHttp/build/webSocket/CMakeFiles/edit_cache.dir
+/home/hzouaf/task/prev/NetaBilibili/ReactorHttp/build/webSocket/CMakeFiles/rebuild_cache.dir

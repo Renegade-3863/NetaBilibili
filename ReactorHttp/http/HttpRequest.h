@@ -14,6 +14,18 @@ struct RequestHeader
 typedef enum { PARSE_OK = 0, PARSE_INCOMPLETE = 1,  PARSE_ERROR = 2 } ParseResult;
 typedef enum { PS_REQLINE, PS_HEADERS, PS_BODY, PS_CHUNK_SIZE, PS_CHUNK_BODY, PS_COMPLETE } ParseState;
 
+// 异步上传上下文：用于在多次读事件中累积接收并落盘
+struct UploadCtx
+{
+    int fd;                    // 目标文件 fd
+    ssize_t expected;          // 期望接收的总长度（Content-Length），若为 -1 表示未知（例如 chunked）
+    ssize_t received;          // 已接收的字节数
+    bool chunked;              // 是否 chunked 传输
+    int duration_sec;          // X-Video-Duration 值（可选）
+    char filename[256];        // 原始文件名（解码后）
+    char path[256];            // 落盘路径，例如 static/uploads/<filename>
+};
+
 // 保存 Http 解析的上下文
 struct HttpParseCtx
 {

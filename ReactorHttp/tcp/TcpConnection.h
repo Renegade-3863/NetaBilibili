@@ -33,6 +33,9 @@ struct TcpConnection
     struct HttpResponse* response;
     bool isWebSocket; // 判断是否为 WebSocket 连接
 
+    // 异步 POST 接收上下文（仅在处理 /upload 时使用）
+    struct UploadCtx* upload;
+
     /* 处理连接池的部分 */
     uint64_t nextReqSeq; // 下一个请求的序列号（来自当前连接的下一个并发请求要分配这个序列号）
     uint64_t nextWriteSeq; // 下一个允许写出的响应的序列号

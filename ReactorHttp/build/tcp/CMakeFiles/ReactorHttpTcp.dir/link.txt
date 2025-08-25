@@ -1,0 +1,2 @@
+/usr/bin/ar qc libReactorHttpTcp.a CMakeFiles/ReactorHttpTcp.dir/Channel.c.o CMakeFiles/ReactorHttpTcp.dir/EpollDispatcher.c.o CMakeFiles/ReactorHttpTcp.dir/EventLoop.c.o CMakeFiles/ReactorHttpTcp.dir/TcpConnection.c.o CMakeFiles/ReactorHttpTcp.dir/TcpServer.c.o
+/usr/bin/ranlib libReactorHttpTcp.a
